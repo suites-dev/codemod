@@ -1,0 +1,334 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Snapshot Tests Basic Examples from Specification should transform complex mock with .impl() and retrieval 1`] = `
+"import { TestBed, type Mocked } from '@suites/unit';
+import { jest } from '@jest/globals';
+
+describe('OrderService', () => {
+  let service: OrderService;
+  let repo: Mocked<OrderRepository>;
+  let payment: Mocked<PaymentGateway>;
+
+  beforeAll(async () => {
+    const { unit, unitRef } = await TestBed.solitary(OrderService)
+      .mock(OrderRepository)
+      .impl({
+        findById: stubFn(),
+        save: stubFn().mockResolvedValue(true)
+      })
+      .mock(PaymentGateway)
+      .impl({
+        charge: stubFn().mockResolvedValue({ success: true })
+      })
+      .compile();
+
+    service = unit;
+    repo = unitRef.get(OrderRepository);
+    payment = unitRef.get(PaymentGateway);
+  });
+
+  it('should create order', async () => {
+    repo.findById.mockResolvedValue({ id: '1', total: 100 });
+
+    const result = await service.createOrder('1');
+
+    expect(repo.findById).toHaveBeenCalledWith('1');
+    expect(payment.charge).toHaveBeenCalled();
+    expect(result.success).toBe(true);
+  });
+});
+"
+`;
+
+exports[`Snapshot Tests Basic Examples from Specification should transform simple mock with .final() 1`] = `
+"import { TestBed } from '@suites/unit';
+
+describe('UserService', () => {
+  let service: UserService;
+
+  beforeAll(async () => {
+    const { unit } = await TestBed.solitary(UserService)
+      .mock(UserRepository)
+      .final({
+        findById: (id: string) => Promise.resolve({ id, name: 'Test' })
+      })
+      .compile();
+
+    service = unit;
+  });
+
+  it('should get user', async () => {
+    const user = await service.getUser('1');
+    expect(user.name).toBe('Test');
+  });
+});
+"
+`;
+
+exports[`Snapshot Tests Basic Examples from Specification should transform token injection 1`] = `
+"import { TestBed } from '@suites/unit';
+
+describe('ApiService', () => {
+  let service: ApiService;
+
+  beforeAll(async () => {
+    const { unit } = await TestBed.solitary(ApiService)
+      .mock('API_KEY')
+      .final('test-key-123')
+      .mock('API_CONFIG')
+      .final({ timeout: 5000, retries: 3 })
+      .compile();
+
+    service = unit;
+  });
+});
+"
+`;
+
+exports[`Snapshot Tests Edge Cases should handle various edge cases correctly 1`] = `
+"import { TestBed } from '@suites/unit';
+
+describe('Edge Cases', () => {
+  // Already async function
+  beforeAll(async () => {
+    const { unit } = await TestBed.solitary(ServiceA).compile();
+  });
+
+  // No mocks at all
+  it('should work without mocks', async () => {
+    const { unit } = await TestBed.solitary(ServiceB).compile();
+    expect(unit).toBeDefined();
+  });
+
+  // Generic type parameters
+  it('should handle generics', async () => {
+    const { unit } = await TestBed.solitary<MyService<string>>(MyService).compile();
+  });
+
+  // Nested destructuring
+  it('should handle nested destructuring', async () => {
+    const {
+      unit: myUnit,
+      unitRef: myRef
+    } = await TestBed.solitary(ServiceC)
+      .mock('TOKEN')
+      .final('value')
+      .compile();
+  });
+
+  // Arrow function with expression body
+  it('test', async () => await TestBed.solitary(ServiceD).compile());
+
+  // Multiple statements in hook
+  beforeEach(async () => {
+    console.log('setup');
+    const { unit } = await TestBed.solitary(ServiceE).compile();
+    console.log('done');
+  });
+});
+"
+`;
+
+exports[`Snapshot Tests Mixed .impl() and .final() should correctly apply .impl() to retrieved mocks and .final() to others 1`] = `
+"import { TestBed, type Mocked } from '@suites/unit';
+
+describe('NotificationService', () => {
+  let service: NotificationService;
+  let emailService: Mocked<EmailService>;
+
+  beforeAll(async () => {
+    const { unit, unitRef } = await TestBed.solitary(NotificationService)
+      .mock(EmailService)
+      .impl({
+        send: stubFn(),
+        validate: stubFn()
+      })
+      .mock(Config)
+      .final({
+        apiUrl: 'https://api.test.com',
+        timeout: 5000,
+        retryAttempts: 3
+      })
+      .mock(RateLimiter)
+      .final({
+        checkLimit: () => true,
+        incrementCount: () => {}
+      })
+      .mock(Logger)
+      .impl({
+        log: stubFn()
+      })
+      .compile();
+
+    service = unit;
+    emailService = unitRef.get(EmailService);
+  });
+
+  it('should send notification', () => {
+    emailService.send.mockResolvedValue(true);
+
+    const result = service.notify('test@example.com', 'Hello');
+
+    expect(emailService.send).toHaveBeenCalled();
+  });
+});
+"
+`;
+
+exports[`Snapshot Tests Multiple Test Hooks should transform TestBed in beforeAll, beforeEach, and test blocks 1`] = `
+"import { TestBed } from '@suites/unit';
+
+describe('TaskService', () => {
+  let service: TaskService;
+
+  beforeAll(async () => {
+    const { unit } = await TestBed.solitary(TaskService)
+      .mock(TaskRepository)
+      .impl({ findAll: stubFn() })
+      .compile();
+
+    service = unit;
+  });
+
+  beforeEach(async () => {
+    const { unitRef } = await TestBed.solitary(TaskService).compile();
+    const mockRepo = unitRef.get(TaskRepository);
+    mockRepo.findAll.mockClear();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should create task', async () => {
+    const { unit, unitRef } = await TestBed.solitary(TaskService)
+      .mock(TaskRepository)
+      .impl({ create: stubFn() })
+      .compile();
+
+    const taskService = unit;
+    const repo = unitRef.get(TaskRepository);
+
+    repo.create.mockResolvedValue({ id: '1' });
+    taskService.createTask({ title: 'Test' });
+
+    expect(repo.create).toHaveBeenCalled();
+  });
+
+  it('should list tasks', () => {
+    const result = service.listTasks();
+    expect(result).toBeDefined();
+  });
+});
+"
+`;
+
+exports[`Snapshot Tests Sinon Framework should transform Sinon-based tests 1`] = `
+"import { TestBed, type Mocked } from '@suites/unit';
+
+describe('PaymentService', () => {
+  let service: PaymentService;
+  let gateway: Mocked<PaymentGateway>;
+  let logger: Mocked<Logger>;
+
+  beforeAll(async () => {
+    const { unit, unitRef } = await TestBed.solitary(PaymentService)
+      .mock(PaymentGateway)
+      .impl({
+        charge: stubFn(),
+        refund: stubFn()
+      })
+      .mock(Logger)
+      .impl({
+        info: stubFn(),
+        error: stubFn()
+      })
+      .compile();
+
+    service = unit;
+    gateway = unitRef.get(PaymentGateway) as Mocked<PaymentGateway>;
+    logger = unitRef.get(Logger) as Mocked<Logger>;
+  });
+
+  it('should process payment', () => {
+    gateway.charge.returns(Promise.resolve({ success: true }));
+
+    const result = service.processPayment(100);
+
+    expect(gateway.charge).to.have.been.calledOnce;
+    expect(logger.info).to.have.been.called;
+  });
+});
+"
+`;
+
+exports[`Snapshot Tests Type Cast Cleanup should remove obsolete type casts 1`] = `
+"import { TestBed, type Mocked } from '@suites/unit';
+
+describe('UserController', () => {
+  let controller: UserController;
+  let userService: Mocked<UserService>;
+  let authService: Mocked<AuthService>;
+  let cacheService: Mocked<CacheService>;
+
+  beforeAll(async () => {
+    const { unit, unitRef } = await TestBed.solitary(UserController).compile();
+
+    controller = unit;
+    userService = unitRef.get(UserService) as Mocked<UserService>;
+    authService = unitRef.get(AuthService) as Mocked<AuthService>;
+    cacheService = unitRef.get(CacheService) as Mocked<CacheService>;
+  });
+
+  beforeEach(() => {
+    userService.findById.mockClear();
+    authService.validateToken.mockClear();
+  });
+
+  it('should get user by id', async () => {
+    const mockUser = { id: '1', name: 'John' };
+    userService.findById.mockResolvedValue(mockUser);
+
+    const result = await controller.getUser('1');
+
+    expect(result).toEqual(mockUser);
+    expect(userService.findById).toHaveBeenCalledWith('1');
+  });
+});
+"
+`;
+
+exports[`Snapshot Tests UnitReference Usage should handle UnitReference imports and usage 1`] = `
+"import { TestBed, type UnitReference, type Mocked } from '@suites/unit';
+
+describe('ProductService', () => {
+  let service: ProductService;
+  let unitRef: UnitReference;
+  let repository: Mocked<ProductRepository>;
+
+  beforeAll(async () => {
+    const testBed = await TestBed.solitary(ProductService)
+      .mock(ProductRepository)
+      .impl({
+        find: stubFn(),
+        save: stubFn(),
+        delete: stubFn()
+      })
+      .compile();
+
+    service = testBed.unit;
+    unitRef = testBed.unitRef;
+    repository = unitRef.get(ProductRepository);
+  });
+
+  it('should find product', async () => {
+    const mockProduct = { id: '1', name: 'Widget' };
+    repository.find.mockResolvedValue(mockProduct);
+
+    const result = await service.findProduct('1');
+
+    expect(result).toEqual(mockProduct);
+  });
+});
+"
+`;
