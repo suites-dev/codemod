@@ -30,7 +30,7 @@ import { detectRetrievals } from '../analyzers/retrieval-detector';
 export function validateNoFinalRetrieval(
   j: JSCodeshift,
   root: Collection,
-  source: string
+  _source: string
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 

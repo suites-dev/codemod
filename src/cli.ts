@@ -7,7 +7,6 @@ import {
   getTransform,
   getDefaultTransform,
   AVAILABLE_TRANSFORMS,
-  type TransformInfo,
 } from './transforms';
 
 const program = new Command();

@@ -25,9 +25,10 @@ const config: Config = {
   ],
   testPathIgnorePatterns: ['/node_modules/'],
   testEnvironment: 'node',
-  coverageDirectory: '<rootDir>',
+  coverageDirectory: '<rootDir>/coverage',
   coverageReporters: [
     'text',
+    'lcov',
     [
       'cobertura',
       {

@@ -24,7 +24,7 @@ import { ValidationRule, createValidationError } from './validator-types';
 export function validateUsingTransformed(
   j: JSCodeshift,
   root: Collection,
-  source: string
+  _source: string
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 

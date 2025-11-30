@@ -26,7 +26,7 @@ import { isJestFn, isSinonStub } from '../utils/ast-helpers';
 export function validateStubsReplaced(
   j: JSCodeshift,
   root: Collection,
-  source: string
+  _source: string
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 

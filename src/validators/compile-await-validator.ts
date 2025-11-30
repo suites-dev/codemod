@@ -20,7 +20,7 @@ import { ValidationRule, createValidationError } from './validator-types';
 export function validateCompileAwaited(
   j: JSCodeshift,
   root: Collection,
-  source: string
+  _source: string
 ): ValidationError[] {
   const errors: ValidationError[] = [];
 

@@ -6,14 +6,12 @@ import type { Logger } from './logger';
  */
 export function checkGitStatus(logger: Logger): void {
   let clean = false;
-  let errorMessage = 'Unable to determine if git directory is clean';
 
   try {
     // Try to use is-git-clean if available
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const isGitClean = require('is-git-clean');
     clean = isGitClean.sync(process.cwd());
-    errorMessage = 'Git directory is not clean';
   } catch (err: any) {
     // Check if it's a "not a git repository" error
     if (err && err.stderr && err.stderr.indexOf('Not a git repository') >= 0) {

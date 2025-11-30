@@ -214,6 +214,7 @@ async function transformFile(
  * Converts: import X = jest.Y; → const X = jest.Y;
  * This syntax is TypeScript-specific and causes babel parser to fail
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function preprocessImportAliases(source: string): string {
   // Match: import identifier = jest.something;
   // or:   import identifier = Sinon.something;
@@ -228,6 +229,7 @@ function preprocessImportAliases(source: string): string {
  * Converts: <Type>value → value as Type
  * This prevents parse errors in .tsx files where <> is ambiguous (JSX vs type cast)
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function preprocessTypeCasts(source: string): string {
   // Match common patterns:
   // <Type>identifier
