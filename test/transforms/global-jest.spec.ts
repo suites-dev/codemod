@@ -1,7 +1,4 @@
-import jscodeshift from 'jscodeshift';
-import { applyTransform } from '../../src/transform';
-
-const j = jscodeshift.withParser('tsx');
+import { applyTransform } from '../../src/transforms/automock-to-suites';
 
 describe('Global Jest Handling', () => {
   describe('When jest is global (no import)', () => {
@@ -26,7 +23,8 @@ describe('Global Jest Handling', () => {
         });
       `;
 
-      const transformed = applyTransform(source);
+      const result = applyTransform(source);
+      const transformed = result.code;
 
       // Should transform jest.Mocked to Mocked
       expect(transformed).toContain('Mocked<UserRepository>');
@@ -62,7 +60,8 @@ describe('Global Jest Handling', () => {
         });
       `;
 
-      const transformed = applyTransform(source);
+      const result = applyTransform(source);
+      const transformed = result.code;
 
       // Should transform to .impl() (because retrieved)
       expect(transformed).toContain('.impl(');
@@ -88,7 +87,8 @@ describe('Global Jest Handling', () => {
         });
       `;
 
-      const transformed = applyTransform(source);
+      const result = applyTransform(source);
+      const transformed = result.code;
 
       // Should still transform jest.Mocked even in partially migrated file
       expect(transformed).toContain('Mocked<Dependency>');
@@ -109,7 +109,8 @@ describe('Global Jest Handling', () => {
         TestBed.create(MyService).compile();
       `;
 
-      const transformed = applyTransform(source);
+      const result = applyTransform(source);
+      const transformed = result.code;
 
       // All jest.Mocked should be transformed
       expect(transformed).toContain('Mocked<ServiceA>');

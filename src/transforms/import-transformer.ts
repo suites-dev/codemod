@@ -22,6 +22,9 @@ export function transformImports(
   // Rule A2: Transform type annotations (only in Suites context)
   if (context.isSuitesContext) {
     transformTypeAnnotations(j, root);
+
+    // Remove old-style type alias imports (e.g., import Mocked = jest.Mocked)
+    removeTypeAliasImports(j, root);
   }
 
   // Add Mocked import if needed
@@ -131,6 +134,7 @@ function transformTypeAnnotations(j: JSCodeshift, root: Collection): void {
 
 /**
  * Add Mocked type import to @suites/unit
+ * Creates the import declaration if it doesn't exist
  */
 function addMockedImport(j: JSCodeshift, root: Collection): void {
   // Find @suites/unit import
@@ -140,7 +144,32 @@ function addMockedImport(j: JSCodeshift, root: Collection): void {
     },
   });
 
-  if (suitesImports.length === 0) return;
+  if (suitesImports.length === 0) {
+    // No @suites/unit import exists - create one with Mocked
+    const mockedSpecifier = j.importSpecifier(
+      j.identifier('Mocked')
+    );
+    (mockedSpecifier as any).importKind = 'type';
+
+    const importDeclaration = j.importDeclaration(
+      [mockedSpecifier],
+      j.stringLiteral('@suites/unit')
+    );
+
+    // Insert at the top of the file after any existing imports
+    const existingImports = root.find(j.ImportDeclaration);
+    if (existingImports.length > 0) {
+      // Add after the last import
+      existingImports.at(-1).insertAfter(importDeclaration);
+    } else {
+      // No imports at all - add at the beginning of the file
+      const firstNode = root.find(j.Program).get('body', 0);
+      if (firstNode) {
+        j(firstNode).insertBefore(importDeclaration);
+      }
+    }
+    return;
+  }
 
   suitesImports.forEach((path) => {
     const specifiers = path.node.specifiers || [];
@@ -167,6 +196,7 @@ function addMockedImport(j: JSCodeshift, root: Collection): void {
 
 /**
  * Add UnitReference type import to @suites/unit
+ * Creates the import declaration if it doesn't exist
  */
 function addUnitReferenceImport(j: JSCodeshift, root: Collection): void {
   // Find @suites/unit import
@@ -176,7 +206,32 @@ function addUnitReferenceImport(j: JSCodeshift, root: Collection): void {
     },
   });
 
-  if (suitesImports.length === 0) return;
+  if (suitesImports.length === 0) {
+    // No @suites/unit import exists - create one with UnitReference
+    const unitRefSpecifier = j.importSpecifier(
+      j.identifier('UnitReference')
+    );
+    (unitRefSpecifier as any).importKind = 'type';
+
+    const importDeclaration = j.importDeclaration(
+      [unitRefSpecifier],
+      j.stringLiteral('@suites/unit')
+    );
+
+    // Insert at the top of the file after any existing imports
+    const existingImports = root.find(j.ImportDeclaration);
+    if (existingImports.length > 0) {
+      // Add after the last import
+      existingImports.at(-1).insertAfter(importDeclaration);
+    } else {
+      // No imports at all - add at the beginning of the file
+      const firstNode = root.find(j.Program).get('body', 0);
+      if (firstNode) {
+        j(firstNode).insertBefore(importDeclaration);
+      }
+    }
+    return;
+  }
 
   suitesImports.forEach((path) => {
     const specifiers = path.node.specifiers || [];
@@ -197,6 +252,53 @@ function addUnitReferenceImport(j: JSCodeshift, root: Collection): void {
       (unitRefSpecifier as any).importKind = 'type';
 
       specifiers.push(unitRefSpecifier);
+    }
+  });
+}
+
+/**
+ * Remove old-style TypeScript type alias imports
+ * Examples:
+ *   import Mocked = jest.Mocked;
+ *   import SinonStubbedInstance = Sinon.SinonStubbedInstance;
+ *
+ * These need to be removed so we can add the proper imports from @suites/unit
+ */
+function removeTypeAliasImports(j: JSCodeshift, root: Collection): void {
+  // Find all TSImportEqualsDeclaration nodes
+  root.find(j.TSImportEqualsDeclaration).forEach((path) => {
+    const importAlias = path.node.id.name;
+    const moduleReference = path.node.moduleReference;
+
+    // Check if this is aliasing jest.Mocked or SinonStubbedInstance
+    if (moduleReference.type === 'TSQualifiedName') {
+      const left = (moduleReference as any).left?.name;
+      const right = (moduleReference as any).right?.name;
+
+      // Remove: import Mocked = jest.Mocked
+      if (
+        importAlias === 'Mocked' &&
+        left === 'jest' &&
+        right === 'Mocked'
+      ) {
+        j(path).remove();
+      }
+
+      // Remove: import SinonStubbedInstance = Sinon.SinonStubbedInstance
+      if (
+        importAlias === 'SinonStubbedInstance' ||
+        right === 'SinonStubbedInstance'
+      ) {
+        j(path).remove();
+      }
+    }
+
+    // Also handle direct identifier references (less common but possible)
+    if (moduleReference.type === 'Identifier') {
+      const name = (moduleReference as any).name;
+      if (name === 'SinonStubbedInstance') {
+        j(path).remove();
+      }
     }
   });
 }

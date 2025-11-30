@@ -1,4 +1,5 @@
 import type { JSCodeshift, Collection, ASTPath, Identifier, Node } from 'jscodeshift';
+import { isCallExpression, isMemberExpression, isIdentifier } from './type-guards';
 
 /**
  * Parse source code into AST
@@ -96,14 +97,19 @@ export function wrapWithAwait(j: JSCodeshift, path: ASTPath): void {
  * Check if a CallExpression is for jest.fn()
  */
 export function isJestFn(node: Node): boolean {
-  if (node.type !== 'CallExpression') return false;
+  if (!isCallExpression(node)) return false;
 
-  const callee = (node as any).callee;
-  if (callee.type !== 'MemberExpression') return false;
+  const callee = node.callee;
+  if (!isMemberExpression(callee)) return false;
+
+  const object = callee.object;
+  const property = callee.property;
 
   return (
-    callee.object?.name === 'jest' &&
-    callee.property?.name === 'fn'
+    isIdentifier(object) &&
+    object.name === 'jest' &&
+    isIdentifier(property) &&
+    property.name === 'fn'
   );
 }
 
@@ -111,14 +117,19 @@ export function isJestFn(node: Node): boolean {
  * Check if a CallExpression is for sinon.stub()
  */
 export function isSinonStub(node: Node): boolean {
-  if (node.type !== 'CallExpression') return false;
+  if (!isCallExpression(node)) return false;
 
-  const callee = (node as any).callee;
-  if (callee.type !== 'MemberExpression') return false;
+  const callee = node.callee;
+  if (!isMemberExpression(callee)) return false;
+
+  const object = callee.object;
+  const property = callee.property;
 
   return (
-    callee.object?.name === 'sinon' &&
-    callee.property?.name === 'stub'
+    isIdentifier(object) &&
+    object.name === 'sinon' &&
+    isIdentifier(property) &&
+    property.name === 'stub'
   );
 }
 

@@ -12,14 +12,14 @@ describe('OrderService', () => {
   beforeAll(async () => {
     const { unit, unitRef } = await TestBed.solitary(OrderService)
       .mock(OrderRepository)
-      .impl({
-        findById: stubFn(),
-        save: stubFn().mockResolvedValue(true)
-      })
+      .impl(stubFn => ({
+      findById: stubFn(),
+      save: stubFn().mockResolvedValue(true),
+    }))
       .mock(PaymentGateway)
-      .impl({
-        charge: stubFn().mockResolvedValue({ success: true })
-      })
+      .impl(stubFn => ({
+      charge: stubFn().mockResolvedValue({ success: true }),
+    }))
       .compile();
 
     service = unit;
@@ -139,10 +139,10 @@ describe('NotificationService', () => {
   beforeAll(async () => {
     const { unit, unitRef } = await TestBed.solitary(NotificationService)
       .mock(EmailService)
-      .impl({
-        send: stubFn(),
-        validate: stubFn()
-      })
+      .impl(stubFn => ({
+      send: stubFn(),
+      validate: stubFn(),
+    }))
       .mock(Config)
       .final({
         apiUrl: 'https://api.test.com',
@@ -155,9 +155,9 @@ describe('NotificationService', () => {
         incrementCount: () => {}
       })
       .mock(Logger)
-      .impl({
-        log: stubFn()
-      })
+      .impl(stubFn => ({
+      log: stubFn(),
+    }))
       .compile();
 
     service = unit;
@@ -184,7 +184,9 @@ describe('TaskService', () => {
   beforeAll(async () => {
     const { unit } = await TestBed.solitary(TaskService)
       .mock(TaskRepository)
-      .impl({ findAll: stubFn() })
+      .impl(stubFn => ({
+      findAll: stubFn(),
+    }))
       .compile();
 
     service = unit;
@@ -203,7 +205,9 @@ describe('TaskService', () => {
   it('should create task', async () => {
     const { unit, unitRef } = await TestBed.solitary(TaskService)
       .mock(TaskRepository)
-      .impl({ create: stubFn() })
+      .impl(stubFn => ({
+      create: stubFn(),
+    }))
       .compile();
 
     const taskService = unit;
@@ -234,15 +238,15 @@ describe('PaymentService', () => {
   beforeAll(async () => {
     const { unit, unitRef } = await TestBed.solitary(PaymentService)
       .mock(PaymentGateway)
-      .impl({
-        charge: stubFn(),
-        refund: stubFn()
-      })
+      .impl(stubFn => ({
+      charge: stubFn(),
+      refund: stubFn(),
+    }))
       .mock(Logger)
-      .impl({
-        info: stubFn(),
-        error: stubFn()
-      })
+      .impl(stubFn => ({
+      info: stubFn(),
+      error: stubFn(),
+    }))
       .compile();
 
     service = unit;
@@ -309,11 +313,11 @@ describe('ProductService', () => {
   beforeAll(async () => {
     const testBed = await TestBed.solitary(ProductService)
       .mock(ProductRepository)
-      .impl({
-        find: stubFn(),
-        save: stubFn(),
-        delete: stubFn()
-      })
+      .impl(stubFn => ({
+      find: stubFn(),
+      save: stubFn(),
+      delete: stubFn(),
+    }))
       .compile();
 
     service = testBed.unit;

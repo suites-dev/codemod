@@ -1,7 +1,7 @@
 # Source files
 src/
-__test__/
-__fixtures__/
+test/
+fixtures/
 
 # Config files
 tsconfig.json

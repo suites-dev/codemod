@@ -27,3 +27,10 @@ pnpm-debug.log*
 # Temp files
 *.tmp
 .cache/
+
+junit.xml
+coverage-report.xml
+papers
+
+.npmrc
+local-scripts

@@ -4,13 +4,14 @@ import type { Collection, JSCodeshift } from 'jscodeshift';
  * CLI options
  */
 export interface CliOptions {
-  auto: boolean;
   dryRun: boolean;
+  force: boolean;
   parser: string;
   extensions: string;
   ignore?: string;
-  skipValidation: boolean;
+  print: boolean;
   verbose: boolean;
+  skipValidation: boolean;
 }
 
 /**
@@ -33,7 +34,7 @@ export interface AnalysisContext {
   needsUnitReferenceImport: boolean;
   retrievedDependencies: Set<string>;
   stubUsages: Map<string, boolean>;
-  mockConfigurations: Map<string, MockConfiguration>;
+  mockConfigurations: Map<string, boolean>;
 }
 
 /**
@@ -68,11 +69,37 @@ export type Transformer = (
 export type Analyzer = (source: string) => Partial<AnalysisContext>;
 
 /**
- * Validation result
+ * Validation error severity levels
+ */
+export type ValidationSeverity = 'error' | 'warning' | 'critical';
+
+/**
+ * Individual validation error
+ */
+export interface ValidationError {
+  rule: string;
+  message: string;
+  severity: ValidationSeverity;
+  line?: number;
+  column?: number;
+}
+
+/**
+ * Validation result with detailed errors
  */
 export interface ValidationResult {
   success: boolean;
-  errors?: string[];
+  errors: ValidationError[];
+  warnings: ValidationError[];
+  criticalErrors: ValidationError[];
+}
+
+/**
+ * Transform output including code and validation
+ */
+export interface TransformOutput {
+  code: string;
+  validation: ValidationResult;
 }
 
 /**

@@ -5,14 +5,13 @@
     "baseUrl": ".",
     "outDir": "dist",
     "target": "es6",
-    "skipLibCheck": true,
     "incremental": false,
     "sourceMap": false
   },
   "exclude": [
     "node_modules",
-    "__test__",
-    "__fixtures__",
+    "test",
+    "fixtures",
     "**/*.spec.ts",
     "jest.config.ts",
     "dist"

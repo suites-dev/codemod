@@ -16,7 +16,7 @@ export default [
       '*.js',
       '*.d.ts',
       'index.ts',
-      '__fixtures__/**/*'
+      'fixtures/**/*'
     ]
   },
   {

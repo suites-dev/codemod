@@ -2,54 +2,119 @@ import { Command } from 'commander';
 import { createLogger } from './utils/logger';
 import type { CliOptions } from './types';
 import { runTransform } from './runner';
+import { checkGitStatus } from './utils/git-safety';
+import {
+  getTransform,
+  getDefaultTransform,
+  AVAILABLE_TRANSFORMS,
+  type TransformInfo,
+} from './transforms';
 
 const program = new Command();
 
 program
   .name('@suites/codemod')
-  .description('Automated migration tool from Automock to Suites')
+  .description('Code transformation tool for the Suites testing framework')
   .version('0.1.0')
+  .argument(
+    '[transform]',
+    'Transform to apply (e.g., automock-to-suites). Defaults to automock-to-suites if not specified.'
+  )
   .argument('[path]', 'Path to transform (file or directory)', '.')
-  .option('-a, --auto', 'Disable interactive mode (auto-transform)', false)
   .option('-d, --dry-run', 'Preview changes without writing files', false)
+  .option('-f, --force', 'Bypass git safety checks', false)
   .option('-p, --parser <parser>', 'Parser to use (tsx, ts, babel)', 'tsx')
   .option('-e, --extensions <exts>', 'File extensions to transform', '.ts,.tsx')
   .option('-i, --ignore <patterns>', 'Ignore file patterns (comma-separated)')
-  .option('--skip-validation', 'Skip TypeScript validation after transform', false)
+  .option('--print', 'Print transformed output to stdout', false)
   .option('-v, --verbose', 'Show detailed transformation logs', false)
-  .action(async (path: string, options: CliOptions) => {
-    const logger = createLogger(options.verbose);
+  .option('--skip-validation', 'Skip post-transformation validation checks', false)
+  .option('--list-transforms', 'List all available transforms', false)
+  .action(
+    async (
+      transformArg: string | undefined,
+      pathArg: string | undefined,
+      options: CliOptions & { listTransforms?: boolean }
+    ) => {
+      const logger = createLogger(options.verbose);
 
-    try {
-      // Show header
-      logger.section('🔄 Suites Codemod - Automock → Suites Migration');
-
-      if (options.dryRun) {
-        logger.info('Running in dry-run mode (no files will be modified)');
+      // Handle --list-transforms
+      if (options.listTransforms) {
+        console.log('Available transforms:\n');
+        AVAILABLE_TRANSFORMS.forEach((t) => {
+          console.log(`  ${t.name}`);
+          console.log(`    ${t.description}\n`);
+        });
+        return;
       }
 
-      if (options.auto) {
-        logger.info('Running in auto mode (no interactive prompts)');
+      // Determine transform and path
+      let transformName: string;
+      let targetPath: string;
+
+      if (transformArg && !transformArg.startsWith('-')) {
+        // First arg might be transform or path
+        const maybeTransform = getTransform(transformArg);
+        if (maybeTransform) {
+          // It's a transform name
+          transformName = transformArg;
+          targetPath = pathArg || '.';
+        } else {
+          // First arg is path, use default transform
+          transformName = getDefaultTransform().name;
+          targetPath = transformArg;
+          logger.info(`No transform specified, using default: ${transformName}`);
+        }
       } else {
-        logger.info('Running in interactive mode (will prompt for ambiguous cases)');
+        // No transform specified, use default
+        transformName = getDefaultTransform().name;
+        targetPath = pathArg || '.';
+        if (!pathArg) {
+          logger.info(`No transform specified, using default: ${transformName}`);
+        }
       }
 
-      logger.newline();
-
-      // Run the transformation
-      await runTransform(path, options, logger);
-    } catch (error) {
-      logger.newline();
-      logger.error('Migration failed:');
-      logger.error((error as Error).message);
-
-      if (options.verbose && (error as Error).stack) {
-        logger.debug((error as Error).stack!);
+      const transformInfo = getTransform(transformName);
+      if (!transformInfo) {
+        logger.error(`Unknown transform: ${transformName}`);
+        logger.error('Run with --list-transforms to see available transforms');
+        process.exit(1);
       }
 
-      process.exit(1);
+      try {
+        // Git safety check (unless in dry-run or force mode)
+        if (!options.dryRun && !options.force) {
+          checkGitStatus(logger);
+        }
+
+        // Show header with dynamic transform name
+        logger.section(`🔄 Suites Codemod - ${transformInfo.description}`);
+
+        if (options.dryRun) {
+          logger.info('Running in dry-run mode (no files will be modified)');
+        }
+
+        if (options.force && !options.dryRun) {
+          logger.warn('Bypassing git safety checks (--force enabled)');
+        }
+
+        logger.newline();
+
+        // Run the transformation
+        await runTransform(targetPath, transformInfo, options, logger);
+      } catch (error) {
+        logger.newline();
+        logger.error('Transformation failed:');
+        logger.error((error as Error).message);
+
+        if (options.verbose && (error as Error).stack) {
+          logger.debug((error as Error).stack!);
+        }
+
+        process.exit(1);
+      }
     }
-  });
+  );
 
 // Parse arguments
 program.parse();

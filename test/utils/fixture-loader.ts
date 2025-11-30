@@ -2,10 +2,10 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 /**
- * Load a fixture file from the __fixtures__ directory
+ * Load a fixture file from the fixtures directory
  */
 export function loadFixture(fixtureName: string, fileName: 'input.ts' | 'output.ts'): string {
-  const fixturePath = join(__dirname, '../../__fixtures__', fixtureName, fileName);
+  const fixturePath = join(__dirname, '../../fixtures', fixtureName, fileName);
   return readFileSync(fixturePath, 'utf-8');
 }
 

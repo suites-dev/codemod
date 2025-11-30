@@ -1,0 +1,130 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Parse Error Handling Category 1: Multi-Variable Declarations with Generics (18 files) should parse and transform files with multi-variable let declarations containing jest.Mocked generics 1`] = `
+"import { TestBed, type Mocked } from '@suites/unit';
+
+let service: InternalTransactionUpdateService,
+    chargeService: Mocked<ChargeService>,
+    transactionDao: Mocked<TransactionDao>,
+    confirmTransaction: Mocked<ConfirmTransaction>,
+    paymentEventLogService: Mocked<PaymentEventLogService>;
+
+describe('Test', () => {
+  beforeAll(async () => {
+    const { unit, unitRef } = await TestBed.solitary(InternalTransactionUpdateService).compile();
+    service = unit;
+    chargeService = unitRef.get(ChargeService);
+  });
+
+  it('should work', () => {
+    expect(service).toBeDefined();
+  });
+});
+"
+`;
+
+exports[`Parse Error Handling Category 2: TypeScript Type Assertions in Generics (3 files) should parse and transform files with type assertions in expect().resolves.toStrictEqual 1`] = `
+"import { TestBed, type Mocked } from '@suites/unit';
+
+describe('TypeAssertionTests', () => {
+  let service: PaymentService;
+  let mockRepo: Mocked<PaymentRepository>;
+
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(PaymentService).compile();
+    service = unit;
+    mockRepo = unitRef.get(PaymentRepository);
+  });
+
+  it('should handle type assertions in resolves', async () => {
+    await expect(service.process()).resolves.toStrictEqual<ReceiptViewModel>({
+      ...mockInvoiceViewModel(),
+      buyerEmail: expect.any(String),
+    });
+  });
+
+  it('should handle complex nested generics', async () => {
+    const result = await service.getEntries();
+    expect(result).toStrictEqual<JournalEntry[]>([
+      { id: 1, type: 'debit' },
+      { id: 2, type: 'credit' },
+    ]);
+  });
+});"
+`;
+
+exports[`Parse Error Handling Category 3: Function Call Syntax Issues (3 files) should parse and transform files with spread syntax in function parameters 1`] = `
+"import { TestBed } from '@suites/unit';
+
+describe('SpreadParamTests', () => {
+  const payoutsFactory = (
+    merchantId: number,
+    ...payouts: Partial<Payout>[]
+  ): { databasePayouts: Payout[]; externalStripePayments: ExternalGatewayPayment[] } => {
+    return {
+      databasePayouts: payouts as Payout[],
+      externalStripePayments: []
+    };
+  };
+
+  const itemFactory = (id: string, ...items: Item[]): Result => ({ id, items });
+
+  it('should handle spread syntax', () => {
+    const result = payoutsFactory(123, { amount: 100 }, { amount: 200 });
+    expect(result).toBeDefined();
+  });
+});
+"
+`;
+
+exports[`Parse Error Handling Real-world Integration: Multiple Parse Error Categories should parse and transform complex files combining multiple error patterns 1`] = `
+"import { TestBed, type Mocked } from '@suites/unit';
+
+let service: MyService,
+    mockRepo: Mocked<Repository>,
+    mockLogger: Mocked<Logger>;
+
+describe('MyService', () => {
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(MyService).compile();
+    service = unit;
+    mockRepo = unitRef.get(Repository);
+    mockLogger = unitRef.get(Logger);
+  });
+
+  it('should process items', async () => {
+    const items = [
+      { id: 1, name: 'Item 1' },
+      { id: 2, name: 'Item 2' },
+    ] as Partial<Item>[];
+
+    mockRepo.findAll.mockResolvedValue(items as Item[]);
+
+    await expect(service.process()).resolves.toStrictEqual<Result>({
+      success: true,
+      count: expect.any(Number),
+    });
+  });
+
+  it('should handle type casts', () => {
+    const overrideFields: Partial<Charge>[] = [
+      {
+        currency: 'USD',
+        chargeStatus: ChargeStatus.PENDING,
+      },
+      {
+        currency: 'EUR',
+        chargeStatus: ChargeStatus.COMPLETED,
+      },
+    ];
+
+    const charges = [
+      { id: 1 },
+      { id: 2 },
+    ] as Partial<Charge>[];
+
+    mockRepo.getCharges.mockResolvedValueOnce(charges as Charge[]);
+  });
+});
+"
+`;

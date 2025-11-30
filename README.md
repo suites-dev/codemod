@@ -1,33 +1,19 @@
 # @suites/codemod
 
-Automated migration tool from Automock to Suites.
-
-## Status
-
-🚧 **Work in Progress** - This package is currently under development.
-
-**Phase 1 (Foundation)**: ✅ Complete
-**Phase 2 (Analysis Layer)**: ⏳ In Progress
-**Phase 3 (Core Transformations)**: ⏳ Pending
-**Phase 4 (Complex Transformations)**: ⏳ Pending
-**Phase 5 (Validation & Polish)**: ⏳ Pending
-**Phase 6 (Documentation & Release)**: ⏳ Pending
+Code transformation tool for the Suites testing framework.
 
 ## Overview
 
-This package provides an automated codemod for migrating Automock test code to Suites. It handles:
+A powerful codemod library for transforming Suites-based test code. Currently supports:
 
-- Import transformations (`@automock/*` → `@suites/unit`)
-- TestBed API changes (`.create()` → `.solitary()`, async compile)
-- Mock configuration transformations (`.using()` → `.impl()` or `.final()`)
-- Type transformations (`jest.Mocked<T>` → `Mocked<T>`)
-- Cleanup of obsolete code patterns
+- **automock-to-suites**: Migrate from Automock to Suites unit testing framework
+- Future transforms for Suites version migrations (e.g., v3 → v4)
 
 ## Installation
 
 ```bash
 # Run with npx (no installation required)
-npx @suites/codemod [path] [options]
+npx @suites/codemod <transform> <path> [options]
 
 # Or install globally
 npm install -g @suites/codemod
@@ -35,64 +21,99 @@ npm install -g @suites/codemod
 
 ## Usage
 
+### Basic Usage
+
 ```bash
-# Interactive mode (default) - prompts for ambiguous transformations
+# Migrate from Automock to Suites
+npx @suites/codemod automock-to-suites ./src
+
+# For backward compatibility, transform defaults to automock-to-suites
 npx @suites/codemod ./src
+```
 
-# Automated mode - best-effort transformations, no prompts
-npx @suites/codemod ./src --auto
+### List Available Transforms
 
-# Dry run - preview changes only
-npx @suites/codemod ./src --dry-run
+```bash
+npx @suites/codemod --list-transforms
+```
+
+### Common Options
+
+```bash
+# Dry run - preview changes without writing files
+npx @suites/codemod automock-to-suites ./src --dry-run
+
+# Skip validation checks
+npx @suites/codemod automock-to-suites ./src --skip-validation
+
+# Verbose output
+npx @suites/codemod automock-to-suites ./src --verbose
 
 # Single file migration
-npx @suites/codemod ./src/user.service.spec.ts
+npx @suites/codemod automock-to-suites ./src/user.service.spec.ts
 
 # Ignore patterns
-npx @suites/codemod ./src --ignore "**/*.e2e.ts,**/fixtures/**"
+npx @suites/codemod automock-to-suites ./src --ignore "**/*.e2e.ts,**/fixtures/**"
 ```
 
-## Options
+## Available Transforms
+
+### `automock-to-suites`
+
+Migrates code from the Automock testing framework to Suites. Handles:
+
+- Import transformations (`@automock/*` → `@suites/unit`)
+- TestBed API changes (`.create()` → `.solitary()`, async compile)
+- Mock configuration transformations (`.using()` → `.impl()` or `.final()`)
+- Type transformations (`jest.Mocked<T>` → `Mocked<T>`)
+- Cleanup of obsolete code patterns
+- Post-transformation validation
+
+**Example:**
+```bash
+npx @suites/codemod automock-to-suites ./src
+```
+
+## CLI Options
 
 ```
+Arguments:
+  [transform]                Transform to apply (defaults to automock-to-suites)
+  [path]                     Path to transform (file or directory) [default: .]
+
 Options:
-  -a, --auto                 Disable interactive mode (auto-transform)
   -d, --dry-run              Preview changes without writing files
+  -f, --force                Bypass git safety checks
   -p, --parser <parser>      Parser to use (tsx, ts, babel) [default: tsx]
   -e, --extensions <exts>    File extensions [default: .ts,.tsx]
-  -i, --ignore <patterns>    Ignore file patterns
-  --skip-validation          Skip TypeScript validation after transform
+  -i, --ignore <patterns>    Ignore file patterns (comma-separated)
+  --print                    Print transformed output to stdout
+  --skip-validation          Skip post-transformation validation checks
   -v, --verbose              Show detailed transformation logs
+  --list-transforms          List all available transforms
   --version                  Display version
   --help                     Display help
 ```
 
 ## Features
 
-### Interactive Mode (Default)
+### Post-Transformation Validation
 
-When the codemod encounters ambiguous transformations, it will prompt you for decisions:
-
-```
-❓ Interactive Decisions
-
-   File: src/services/payment.service.spec.ts
-
-   Mock configuration for PaymentGateway:
-   ? Choose strategy: (Use arrow keys)
-   ❯ .impl() - Retrievable mock (use if you call unitRef.get())
-     .final() - Immutable mock (simpler, but not retrievable)
-
-   Recommendation: .impl() (detected unitRef.get() call on line 45)
-```
-
-### TypeScript Validation
-
-After transformation, the codemod validates that your code compiles successfully:
+After transformation, the codemod validates your code and reports issues:
 
 ```
-✅ Validating TypeScript...
-   ✓ All files compile successfully
+✅ Validation passed
+   ✓ All transformations completed successfully
+```
+
+### Git Safety Checks
+
+Automatically checks for uncommitted changes before transforming:
+
+```
+⚠️  Git directory is not clean
+Please commit or stash your changes before running the codemod.
+Use --force to bypass this check.
 ```
 
 ### Comprehensive Reporting
@@ -141,27 +162,46 @@ The codemod implements these transformation rules:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Build
-npm run build
+pnpm run build
 
 # Run tests
-npm test
+pnpm test
 
 # Run tests in watch mode
-npm run test:watch
+pnpm run test:watch
 
 # Lint
-npm run lint
+pnpm run lint
 
 # Lint with auto-fix
-npm run lint:fix
+pnpm run lint:fix
 ```
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Commit Convention
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and releases.
+
+```bash
+# Examples
+feat: add new transformation rule
+fix: resolve import path issue
+docs: update usage examples
+```
+
+See [RELEASE.md](papers/RELEASE.md) for detailed release process documentation.
+
+## Release
+
+This package uses **semantic-release** for automated versioning and publishing. Releases are automatically triggered when commits are pushed to `master` or `next` branches.
+
+For more information, see [RELEASE.md](papers/RELEASE.md).
 
 ## License
 
