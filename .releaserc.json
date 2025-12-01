@@ -54,7 +54,13 @@
         "changelogTitle": "# Changelog\n\nAll notable changes to this project will be documented in this file."
       }
     ],
-    "@semantic-release/npm",
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": true,
+        "pkgRoot": "."
+      }
+    ],
     [
       "@semantic-release/git",
       {
