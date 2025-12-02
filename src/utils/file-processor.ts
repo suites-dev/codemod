@@ -5,6 +5,7 @@ import { glob } from 'glob';
 export interface FileProcessorOptions {
   extensions: string[];
   ignorePatterns: string[];
+  sourceImportPattern?: RegExp;
 }
 
 export class FileProcessor {
@@ -105,22 +106,24 @@ export class FileProcessor {
   }
 
   /**
-   * Filter files that contain Automock imports
+   * Filter files that contain source framework imports
+   * Default pattern matches Automock imports for backward compatibility
    */
-  filterAutomockFiles(files: string[]): string[] {
+  filterSourceFiles(files: string[]): string[] {
     return files.filter((filePath) => {
       const content = this.readFile(filePath);
-      return this.hasAutomockImport(content);
+      return this.hasSourceImport(content);
     });
   }
 
   /**
-   * Check if file content contains Automock imports
+   * Check if file content contains source framework imports
+   * Default pattern matches Automock imports for backward compatibility
    */
-  private hasAutomockImport(content: string): boolean {
-    const automockImportPattern =
+  private hasSourceImport(content: string): boolean {
+    const importPattern = this.options.sourceImportPattern ||
       /@automock\/(jest|sinon|core)['"]|from\s+['"]@automock\/(jest|sinon|core)['"]/;
-    return automockImportPattern.test(content);
+    return importPattern.test(content);
   }
 
   /**

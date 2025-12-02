@@ -10,19 +10,19 @@ Automated code transformations for Suites projects. Built on [jscodeshift](https
 ## Usage
 
 ```bash
-npx @suites/codemod <path> [options]
+npx @suites/codemod <transform> <path> [options]
 ```
 
 **Example:**
 ```bash
-npx @suites/codemod src/**/*.spec.ts
+npx @suites/codemod automock/2/to-suites-v3 src/**/*.spec.ts
 ```
 
 Run with `--dry-run` to preview changes without modifying files.
 
 ## Available Transforms
 
-- **`automock-to-suites`** (default) - Migrate test files from Automock to Suites testing framework
+- **`automock/2/to-suites-v3`** - Migrate test files from Automock v2 to Suites v3 testing framework
 
 ## Example
 
@@ -79,10 +79,10 @@ describe('UserService', () => {
 **More examples:**
 ```bash
 # Preview changes
-npx @suites/codemod src --dry-run
+npx @suites/codemod automock/2/to-suites-v3 src --dry-run
 
 # Ignore certain files
-npx @suites/codemod src --ignore "**/*.integration.ts"
+npx @suites/codemod automock/2/to-suites-v3 src --ignore "**/*.integration.ts"
 
 # List all transforms
 npx @suites/codemod --list-transforms
@@ -90,9 +90,9 @@ npx @suites/codemod --list-transforms
 
 ## Transform Details
 
-### `automock-to-suites`
+### `automock/2/to-suites-v3`
 
-Intelligently migrates Automock test files to Suites framework.
+Intelligently migrates Automock v2 test files to Suites v3 framework.
 
 **What it transforms:**
 - Import statements: `@automock/jest` -> `@suites/unit`

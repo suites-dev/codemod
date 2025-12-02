@@ -5,7 +5,6 @@ import { runTransform } from './runner';
 import { checkGitStatus } from './utils/git-safety';
 import {
   getTransform,
-  getDefaultTransform,
   AVAILABLE_TRANSFORMS,
 } from './transforms';
 
@@ -17,7 +16,7 @@ program
   .version('0.1.0')
   .argument(
     '[transform]',
-    'Transform to apply (e.g., automock-to-suites). Defaults to automock-to-suites if not specified.'
+    'Transform to apply (e.g., automock/2/to-suites-v3)'
   )
   .argument('[path]', 'Path to transform (file or directory)', '.')
   .option('-d, --dry-run', 'Preview changes without writing files', false)
@@ -47,31 +46,21 @@ program
         return;
       }
 
-      // Determine transform and path
-      let transformName: string;
-      let targetPath: string;
-
-      if (transformArg && !transformArg.startsWith('-')) {
-        // First arg might be transform or path
-        const maybeTransform = getTransform(transformArg);
-        if (maybeTransform) {
-          // It's a transform name
-          transformName = transformArg;
-          targetPath = pathArg || '.';
-        } else {
-          // First arg is path, use default transform
-          transformName = getDefaultTransform().name;
-          targetPath = transformArg;
-          logger.info(`No transform specified, using default: ${transformName}`);
-        }
-      } else {
-        // No transform specified, use default
-        transformName = getDefaultTransform().name;
-        targetPath = pathArg || '.';
-        if (!pathArg) {
-          logger.info(`No transform specified, using default: ${transformName}`);
-        }
+      // Validate transform is provided
+      if (!transformArg) {
+        logger.error('Transform argument required.');
+        logger.info('\nAvailable transforms:');
+        AVAILABLE_TRANSFORMS.forEach((t) => {
+          console.log(`  ${t.name}`);
+          console.log(`    ${t.description}\n`);
+        });
+        logger.info('Example usage:');
+        logger.info(`  npx @suites/codemod ${AVAILABLE_TRANSFORMS[0].name} ./src`);
+        process.exit(1);
       }
+
+      const transformName = transformArg;
+      const targetPath = pathArg || '.';
 
       const transformInfo = getTransform(transformName);
       if (!transformInfo) {
