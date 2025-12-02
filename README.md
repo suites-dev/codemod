@@ -154,6 +154,32 @@ The codemod uses [jscodeshift](https://github.com/facebook/jscodeshift) to:
 
 **TypeScript Support:** First-class support with fallback parser for complex syntax (generics, type guards, decorators, JSX/TSX).
 
+## Architecture
+
+This codemod follows the **Codemod Registry** pattern used by React, Next.js, and other major frameworks:
+
+**Transform Naming:** `<framework>/<version>/<transform>`
+- `automock/2/to-suites-v3` - Current migration
+- `automock/3/to-suites-v4` - Future migrations
+- Supports multiple transforms per version
+- Extensible to other frameworks (e.g., `jest/28/to-v29`)
+
+**Directory Structure:**
+```
+src/transforms/
+  automock/              # Framework namespace
+    2/                   # Source version
+      to-suites-v3.ts    # Migration transform
+    3/                   # Future: next version
+      to-suites-v4.ts
+```
+
+**Design Benefits:**
+- No default transform - explicit selection prevents mistakes
+- Version-based organization supports migration chains
+- Framework namespacing allows multi-framework support
+- Clear source → target versioning
+
 ## Contributing
 
 Contributions welcome! To contribute:
@@ -167,11 +193,25 @@ Contributions welcome! To contribute:
 
 ### Adding New Transforms
 
-1. Create transform file in `src/transforms/`
-2. Register in `src/transforms/index.ts`
-3. Add test fixtures in `fixtures/`
-4. Add integration tests in `test/integration/`
-5. Update this README
+1. Create transform directory: `src/transforms/<framework>/<version>/<transform-name>.ts`
+2. Export `applyTransform` function from your transform
+3. Register in `src/transforms/index.ts`:
+   ```typescript
+   {
+     name: 'framework/version/transform-name',
+     description: 'Description of what it does',
+     path: './transforms/framework/version/transform-name',
+   }
+   ```
+4. Add test fixtures in `fixtures/`
+5. Add integration tests in `test/integration/`
+6. Update this README
+
+**Example:**
+```typescript
+// src/transforms/automock/3/to-suites-v4.ts
+export { applyTransform } from '../../../transform';
+```
 
 ### Project Structure
 
@@ -179,6 +219,10 @@ Contributions welcome! To contribute:
 src/
   analyzers/        # Code analysis utilities
   transforms/       # Transform implementations
+    automock/       # Framework namespace
+      2/            # Version-specific transforms
+        to-suites-v3.ts
+    index.ts        # Transform registry
   validators/       # Post-transform validation
   utils/            # Shared utilities
   cli.ts            # CLI interface
@@ -189,6 +233,52 @@ test/
   integration/      # Integration tests
   transforms/       # Transform unit tests
   fixtures/         # Test fixtures (before/after)
+```
+
+## Local Development
+
+### Running Locally
+
+From within the codemod repository:
+
+```bash
+# Build first
+pnpm build
+
+# Run on a target repository
+node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry-run
+
+# Run on test fixtures
+node dist/cli.js automock/2/to-suites-v3 fixtures/simple-final --dry-run
+
+# Verbose output for debugging
+node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry-run --verbose
+```
+
+### Using npm link for Testing
+
+```bash
+# In the codemod repo
+npm link
+
+# Now use it anywhere like npx
+codemod automock/2/to-suites-v3 /path/to/repo --dry-run
+
+# Unlink when done
+npm unlink -g @suites/codemod
+```
+
+### Running Tests
+
+```bash
+# All tests
+pnpm test
+
+# Specific test file
+pnpm test path/to/test.spec.ts
+
+# With coverage
+pnpm test --coverage
 ```
 
 ## License
