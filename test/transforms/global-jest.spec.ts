@@ -1,4 +1,4 @@
-import { applyTransform } from '../../src/transforms/automock-to-suites';
+import { applyTransform } from '../../src/transforms/automock/2/to-suites-v3';
 
 describe('Global Jest Handling', () => {
   describe('When jest is global (no import)', () => {

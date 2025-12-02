@@ -7,7 +7,7 @@
  */
 
 import { loadFixturePair } from './utils/fixture-loader';
-import { applyTransform } from '../src/transforms/automock-to-suites';
+import { applyTransform } from '../src/transforms/automock/2/to-suites-v3';
 
 describe('Parse Error Handling', () => {
   describe('Category 1: Multi-Variable Declarations with Generics (18 files)', () => {

@@ -37,18 +37,18 @@ export async function runTransform(
   const allFiles = await fileProcessor.discoverFiles(targetPath);
   logger.succeedSpinner(`Found ${allFiles.length} files`);
 
-  // Step 2: Filter for Automock files
-  logger.startSpinner('Analyzing Automock usage..');
-  const automockFiles = fileProcessor.filterAutomockFiles(allFiles);
+  // Step 2: Filter for source framework files
+  logger.startSpinner('Analyzing source framework usage..');
+  const sourceFiles = fileProcessor.filterSourceFiles(allFiles);
 
-  if (automockFiles.length === 0) {
-    logger.warnSpinner('No Automock files found');
-    logger.info('No files contain Automock imports. Migration not needed.');
+  if (sourceFiles.length === 0) {
+    logger.warnSpinner('No source framework files found');
+    logger.info('No files contain source framework imports. Migration not needed.');
     return createEmptySummary();
   }
 
-  logger.succeedSpinner(`${automockFiles.length} files contain Automock imports`);
-  logger.subsection(`${allFiles.length - automockFiles.length} files skipped (no Automock code)`);
+  logger.succeedSpinner(`${sourceFiles.length} files contain source framework imports`);
+  logger.subsection(`${allFiles.length - sourceFiles.length} files skipped (no source imports)`);
 
   logger.newline();
 
@@ -59,7 +59,7 @@ export async function runTransform(
   let totalErrors = 0;
   let totalWarnings = 0;
 
-  for (const filePath of automockFiles) {
+  for (const filePath of sourceFiles) {
     const result = await transformFile(filePath, applyTransform, options, logger);
     results.push(result);
 
@@ -79,8 +79,8 @@ export async function runTransform(
     logger.success(`${filesTransformed} file${filesTransformed > 1 ? 's' : ''} transformed successfully`);
   }
 
-  if (automockFiles.length - filesTransformed > 0) {
-    logger.info(`  ${automockFiles.length - filesTransformed} file${automockFiles.length - filesTransformed > 1 ? 's' : ''} skipped (no changes needed)`);
+  if (sourceFiles.length - filesTransformed > 0) {
+    logger.info(`  ${sourceFiles.length - filesTransformed} file${sourceFiles.length - filesTransformed > 1 ? 's' : ''} skipped (no changes needed)`);
   }
 
   if (totalWarnings > 0) {
@@ -110,9 +110,9 @@ export async function runTransform(
   }
 
   return {
-    filesProcessed: automockFiles.length,
+    filesProcessed: sourceFiles.length,
     filesTransformed,
-    filesSkipped: automockFiles.length - filesTransformed,
+    filesSkipped: sourceFiles.length - filesTransformed,
     importsUpdated: 0, // TODO: Track this from transformers
     mocksConfigured: 0, // TODO: Track this from transformers
     errors: totalErrors,

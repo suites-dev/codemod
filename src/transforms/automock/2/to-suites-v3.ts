@@ -10,4 +10,4 @@
  * - Cleanup of obsolete patterns
  */
 
-export { applyTransform } from '../transform';
+export { applyTransform } from '../../../transform';

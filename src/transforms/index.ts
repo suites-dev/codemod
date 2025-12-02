@@ -2,11 +2,12 @@
  * Transform Registry
  *
  * Central registry for all available codemods.
- * Each transform represents a specific migration (e.g., automock-to-suites, v3-to-v4).
+ * Follows Codemod Registry pattern: <framework>/<version>/<transform>
+ * Examples: automock/2/to-suites-v3, jest/28/to-v29
  */
 
 export interface TransformInfo {
-  /** Unique identifier for the transform (e.g., 'automock-to-suites') */
+  /** Unique identifier for the transform (e.g., 'automock/2/to-suites-v3') */
   name: string;
   /** Human-readable description of what the transform does */
   description: string;
@@ -20,34 +21,25 @@ export interface TransformInfo {
  */
 export const AVAILABLE_TRANSFORMS: TransformInfo[] = [
   {
-    name: 'automock-to-suites',
-    description: 'Migrate from Automock to Suites unit testing framework',
-    path: './transforms/automock-to-suites',
+    name: 'automock/2/to-suites-v3',
+    description: 'Migrate from Automock v2 to Suites v3 unit testing framework',
+    path: './transforms/automock/2/to-suites-v3',
   },
-  // Future transforms will be added here, e.g.:
+  // Future transforms:
   // {
-  //   name: 'v3-to-v4',
-  //   description: 'Migrate from Suites v3 to v4',
-  //   path: './transforms/v3-to-v4',
+  //   name: 'automock/3/to-suites-v4',
+  //   description: 'Migrate from Suites v3 to Suites v4',
+  //   path: './transforms/automock/3/to-suites-v4',
   // },
 ];
 
 /**
  * Get transform info by name
- * @param name Transform name (e.g., 'automock-to-suites')
+ * @param name Transform name (e.g., 'automock/2/to-suites-v3')
  * @returns Transform info or null if not found
  */
 export function getTransform(name: string): TransformInfo | null {
   return AVAILABLE_TRANSFORMS.find((t) => t.name === name) || null;
-}
-
-/**
- * Get the default transform (first in the registry)
- * Used for backward compatibility when no transform is specified.
- * @returns Default transform info
- */
-export function getDefaultTransform(): TransformInfo {
-  return AVAILABLE_TRANSFORMS[0];
 }
 
 /**
