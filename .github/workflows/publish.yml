@@ -1,0 +1,111 @@
+name: Publish Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Distribution tag'
+        required: true
+        type: choice
+        options:
+          - latest
+          - next
+          - rc
+          - dev
+          - alpha
+          - beta
+      branch:
+        description: 'Target branch'
+        required: true
+        type: choice
+        options:
+          - master
+          - next
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.9
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Run lint
+        run: pnpm run lint
+
+      - name: Publish to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+          npm publish --tag ${{ inputs.tag }} --provenance --access public
+
+      - name: Create Summary
+        if: success()
+        run: |
+          echo "## ✅ Publication Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Package published to npm with tag: **${{ inputs.tag }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.tag }}" = "latest" ]; then
+            echo "npm install @suites/codemod" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "npm install @suites/codemod@${{ inputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Create Failure Summary
+        if: failure()
+        run: |
+          echo "## ❌ Publication Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The package could not be published. Check the logs above for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Common Issues" >> $GITHUB_STEP_SUMMARY
+          echo "- Ensure NPM_TOKEN secret is configured correctly" >> $GITHUB_STEP_SUMMARY
+          echo "- Check if the version already exists on npm" >> $GITHUB_STEP_SUMMARY
+          echo "- Verify build and tests pass successfully" >> $GITHUB_STEP_SUMMARY
