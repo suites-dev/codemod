@@ -62,7 +62,7 @@ export class Logger {
    * Log a success message
    */
   success(message: string): void {
-    console.log(chalk.green('✓'), message);
+    console.log(chalk.green('✔'), message);
   }
 
   /**
@@ -113,7 +113,7 @@ export class Logger {
    * Log a file transformation result
    */
   fileTransformed(filePath: string, changes: string[]): void {
-    console.log(chalk.green('✓'), chalk.dim(filePath));
+    console.log(chalk.green('✔'), chalk.dim(filePath));
     changes.forEach((change) => {
       this.subsection(chalk.dim(`- ${change}`), 5);
     });
