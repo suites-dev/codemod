@@ -77,8 +77,8 @@
     "typescript"
   ],
   "publishConfig": {
-    "registry": "http://localhost:4873",
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "packageManager": "pnpm@8.15.9"
 }
