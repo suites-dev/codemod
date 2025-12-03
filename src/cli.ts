@@ -16,10 +16,10 @@ program
   .version('0.1.0', '-v, --version', 'Output the current version')
   .helpOption('-h, --help', 'Display help message')
   .argument(
-    '[transform]',
-    'Transform to apply (e.g., automock/2/to-suites-v3)'
+    '[codemod]',
+    'Codemod slug to run. See "https://github.com/suites-dev/codemod".'
   )
-  .argument('[path]', 'Path to transform (file or directory)', '.')
+  .argument('[source]', 'Path to source files or directory to transform including glob patterns.', '.')
   .option('-d, --dry', 'Dry run (no changes are made to files)', false)
   .option('-f, --force', 'Bypass Git safety checks and forcibly run codemods', false)
   .option('-p, --print', 'Print transformed files to stdout, useful for development', false)
@@ -31,15 +31,15 @@ program
   .option('--list-transforms', 'List all available transforms', false)
   .action(
     async (
-      transformArg: string | undefined,
-      pathArg: string | undefined,
+      codemodArg: string | undefined,
+      sourceArg: string | undefined,
       options: CliOptions & { listTransforms?: boolean }
     ) => {
       const logger = createLogger(options.verbose);
 
       // Handle --list-transforms
       if (options.listTransforms) {
-        console.log('Available transforms:\n');
+        console.log('Available codemods:\n');
         AVAILABLE_TRANSFORMS.forEach((t) => {
           console.log(`  ${t.name}`);
           console.log(`    ${t.description}\n`);
@@ -47,10 +47,10 @@ program
         return;
       }
 
-      // Validate transform is provided
-      if (!transformArg) {
-        logger.error('Transform argument required.');
-        logger.info('\nAvailable transforms:');
+      // Validate codemod is provided
+      if (!codemodArg) {
+        logger.error('Codemod argument required.');
+        logger.info('\nAvailable codemods:');
         AVAILABLE_TRANSFORMS.forEach((t) => {
           console.log(`  ${t.name}`);
           console.log(`    ${t.description}\n`);
@@ -60,13 +60,13 @@ program
         process.exit(1);
       }
 
-      const transformName = transformArg;
-      const targetPath = pathArg || '.';
+      const codemodName = codemodArg;
+      const sourcePath = sourceArg || '.';
 
-      const transformInfo = getTransform(transformName);
+      const transformInfo = getTransform(codemodName);
       if (!transformInfo) {
-        logger.error(`Unknown transform: ${transformName}`);
-        logger.error('Run with --list-transforms to see available transforms');
+        logger.error(`Unknown codemod: ${codemodName}`);
+        logger.error('Run with --list-transforms to see available codemods');
         process.exit(1);
       }
 
@@ -90,7 +90,7 @@ program
         logger.newline();
 
         // Run the transformation
-        await runTransform(targetPath, transformInfo, options, logger);
+        await runTransform(sourcePath, transformInfo, options, logger);
       } catch (error) {
         logger.newline();
         logger.error('Transformation failed:');
