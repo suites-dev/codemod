@@ -19,13 +19,13 @@ export function checkGitStatus(logger: Logger): void {
       clean = true;
     } else if (err && err.code === 'MODULE_NOT_FOUND') {
       // is-git-clean not installed - warn and allow
-      logger.warn('⚠️  Git safety check skipped (is-git-clean not installed)');
+      logger.warn('Git safety check skipped (is-git-clean not installed)');
       clean = true;
     }
   }
 
   if (!clean) {
-    logger.error('❌ Git working directory is not clean');
+    logger.error('Git working directory is not clean');
     logger.info('Please commit or stash your changes before running the codemod.');
     logger.info('This ensures you can easily revert changes if needed.');
     logger.newline();
