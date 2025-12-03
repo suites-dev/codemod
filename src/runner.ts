@@ -193,7 +193,7 @@ async function transformFile(
       // Write transformed file
       await fs.writeFile(filePath, transformOutput.code, 'utf-8');
       result.changes.push('File updated');
-      logger.success(`  ✓ ${path.relative(process.cwd(), filePath)}`);
+      logger.success(`  ${path.relative(process.cwd(), filePath)}`);
     } else {
       // Dry run - just report what would change
       result.changes.push('Would be updated (dry)');
@@ -203,7 +203,7 @@ async function transformFile(
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
     result.errors.push(errorMessage);
-    logger.error(`  ✗ ${path.relative(process.cwd(), filePath)}: ${errorMessage}`);
+    logger.error(`  ${path.relative(process.cwd(), filePath)}: ${errorMessage}`);
   }
 
   return result;
