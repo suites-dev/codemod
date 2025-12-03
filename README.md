@@ -62,7 +62,16 @@ describe('UserService', () => {
 });
 ```
 
-## CLI Options
+## CLI Reference
+
+### Arguments
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `codemod` | Codemod slug to run. See available transforms below. | - |
+| `source` | Path to source files or directory to transform including glob patterns. | `.` |
+
+### Options
 
 | Option | Description | Default |
 |--------|-------------|---------|

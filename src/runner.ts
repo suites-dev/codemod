@@ -31,7 +31,14 @@ export async function runTransform(
 
   const fileProcessor = createFileProcessor({
     extensions: options.extensions.split(',').map((ext) => ext.trim()),
-    ignorePatterns: options.ignore?.split(',').map((pattern) => pattern.trim()) || [],
+    ignorePatterns: options.ignore
+      ? [
+          '**/node_modules/**',
+          '**/dist/**',
+          '**/*.d.ts',
+          ...options.ignore.split(',').map((pattern) => pattern.trim()),
+        ]
+      : undefined,
   });
 
   const allFiles = await fileProcessor.discoverFiles(targetPath);
