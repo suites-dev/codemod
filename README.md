@@ -81,13 +81,9 @@ describe('UserService', () => {
 | `-p, --print` | Print transformed files to stdout, useful for development | `false` |
 | `--verbose` | Show more information about the transform process | `false` |
 | `--parser <parser>` | Parser to use: `tsx`, `ts`, `babel` | `tsx` |
-| `--extensions <exts>` | File extensions to transform | `.ts,.tsx` |
-| `--ignore <patterns>` | Ignore file patterns (comma-separated) | - |
-| `--skip-validation` | Skip post-transformation validation checks | `false` |
-| `--list-codemods` | List all available codemods | - |
 | `-h, --help` | Display help message | - |
 
-**More examples:**
+**Examples:**
 ```bash
 # Preview changes (dry run)
 npx @suites/codemod automock/2/to-suites-v3 src --dry
@@ -95,14 +91,11 @@ npx @suites/codemod automock/2/to-suites-v3 src --dry
 # Print output to stdout
 npx @suites/codemod automock/2/to-suites-v3 src/file.ts -p
 
-# Ignore certain files
-npx @suites/codemod automock/2/to-suites-v3 src --ignore "**/*.integration.ts"
-
 # Verbose output
 npx @suites/codemod automock/2/to-suites-v3 src --verbose
 
-# List all codemods
-npx @suites/codemod --list-codemods
+# Use different parser
+npx @suites/codemod automock/2/to-suites-v3 src --parser babel
 ```
 
 ## Transform Details
@@ -149,7 +142,7 @@ Built-in validation ensures:
 - Commit your changes or use `--force` to bypass
 
 **"No files found"**
-- Check your path and file extensions: `--extensions .spec.ts,.test.ts`
+- Check your source path and ensure it contains `.ts` or `.tsx` files
 
 **Parser errors**
 - Try the babel parser: `--parser babel`
@@ -157,7 +150,7 @@ Built-in validation ensures:
 **Validation failed**
 - Run with `--verbose` for detailed logs
 - Review validation errors in the output
-- Use `--skip-validation` to bypass (not recommended)
+- Fix the issues reported by validators
 
 For more help, see [troubleshooting guide](https://github.com/suites-dev/codemod/issues) or open an issue.
 

@@ -25,27 +25,13 @@ program
   .option('-p, --print', 'Print transformed files to stdout, useful for development', false)
   .option('--verbose', 'Show more information about the transform process', false)
   .option('--parser <parser>', 'Parser to use (tsx, ts, babel)', 'tsx')
-  .option('--extensions <exts>', 'File extensions to transform', '.ts,.tsx')
-  .option('--ignore <patterns>', 'Ignore file patterns (comma-separated)')
-  .option('--skip-validation', 'Skip post-transformation validation checks', false)
-  .option('--list-codemods', 'List all available codemods', false)
   .action(
     async (
       codemodArg: string | undefined,
       sourceArg: string | undefined,
-      options: CliOptions & { listCodemods?: boolean }
+      options: CliOptions
     ) => {
       const logger = createLogger(options.verbose);
-
-      // Handle --list-codemods
-      if (options.listCodemods) {
-        console.log('Available codemods:\n');
-        AVAILABLE_TRANSFORMS.forEach((t) => {
-          console.log(`  ${t.name}`);
-          console.log(`    ${t.description}\n`);
-        });
-        return;
-      }
 
       // Validate codemod is provided
       if (!codemodArg) {
@@ -66,7 +52,11 @@ program
       const transformInfo = getTransform(codemodName);
       if (!transformInfo) {
         logger.error(`Unknown codemod: ${codemodName}`);
-        logger.error('Run with --list-codemods to see available codemods');
+        logger.info('\nAvailable codemods:');
+        AVAILABLE_TRANSFORMS.forEach((t) => {
+          console.log(`  ${t.name}`);
+          console.log(`    ${t.description}\n`);
+        });
         process.exit(1);
       }
 

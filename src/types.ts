@@ -7,11 +7,8 @@ export interface CliOptions {
   dry: boolean;
   force: boolean;
   parser: string;
-  extensions: string;
-  ignore?: string;
   print: boolean;
   verbose: boolean;
-  skipValidation: boolean;
 }
 
 /**

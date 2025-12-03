@@ -30,15 +30,12 @@ export async function runTransform(
   logger.startSpinner('Discovering files..');
 
   const fileProcessor = createFileProcessor({
-    extensions: options.extensions.split(',').map((ext) => ext.trim()),
-    ignorePatterns: options.ignore
-      ? [
-          '**/node_modules/**',
-          '**/dist/**',
-          '**/*.d.ts',
-          ...options.ignore.split(',').map((pattern) => pattern.trim()),
-        ]
-      : undefined,
+    extensions: ['.ts', '.tsx'],
+    ignorePatterns: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/*.d.ts',
+    ],
   });
 
   const allFiles = await fileProcessor.discoverFiles(targetPath);
@@ -161,7 +158,6 @@ async function transformFile(
 
     // Apply transformation
     const transformOutput = applyTransform(source, {
-      skipValidation: options.skipValidation,
       parser: options.parser,
     });
 
@@ -174,19 +170,17 @@ async function transformFile(
     result.transformed = true;
 
     // Collect validation errors and warnings
-    if (!options.skipValidation) {
-      transformOutput.validation.errors.forEach((err: ValidationError) => {
-        result.errors.push(`${err.rule}: ${err.message}`);
-      });
+    transformOutput.validation.errors.forEach((err: ValidationError) => {
+      result.errors.push(`${err.rule}: ${err.message}`);
+    });
 
-      transformOutput.validation.warnings.forEach((warn: ValidationError) => {
-        result.warnings.push(`${warn.rule}: ${warn.message}`);
-      });
+    transformOutput.validation.warnings.forEach((warn: ValidationError) => {
+      result.warnings.push(`${warn.rule}: ${warn.message}`);
+    });
 
-      transformOutput.validation.criticalErrors.forEach((err: ValidationError) => {
-        result.errors.push(`[CRITICAL] ${err.rule}: ${err.message}`);
-      });
-    }
+    transformOutput.validation.criticalErrors.forEach((err: ValidationError) => {
+      result.errors.push(`[CRITICAL] ${err.rule}: ${err.message}`);
+    });
 
     // Handle --print flag (output to stdout instead of writing)
     if (options.print) {
