@@ -18,7 +18,7 @@ npx @suites/codemod <transform> <path> [options]
 npx @suites/codemod automock/2/to-suites-v3 src/**/*.spec.ts
 ```
 
-Run with `--dry-run` to preview changes without modifying files.
+Run with `--dry` or `-d` to preview changes without modifying files.
 
 ## Available Transforms
 
@@ -66,23 +66,31 @@ describe('UserService', () => {
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-d, --dry-run` | Preview changes without writing files | `false` |
-| `-f, --force` | Bypass git safety checks | `false` |
-| `-p, --parser <parser>` | Parser: `tsx`, `ts`, `babel` | `tsx` |
-| `-e, --extensions <exts>` | File extensions to transform | `.ts,.tsx` |
-| `-i, --ignore <patterns>` | Ignore file patterns (comma-separated) | - |
-| `--print` | Print output to stdout | `false` |
-| `-v, --verbose` | Show detailed logs | `false` |
-| `--skip-validation` | Skip validation checks | `false` |
+| `-v, --version` | Output the current version | - |
+| `-d, --dry` | Dry run (no changes are made to files) | `false` |
+| `-f, --force` | Bypass Git safety checks and forcibly run codemods | `false` |
+| `-p, --print` | Print transformed files to stdout, useful for development | `false` |
+| `--verbose` | Show more information about the transform process | `false` |
+| `--parser <parser>` | Parser to use: `tsx`, `ts`, `babel` | `tsx` |
+| `--extensions <exts>` | File extensions to transform | `.ts,.tsx` |
+| `--ignore <patterns>` | Ignore file patterns (comma-separated) | - |
+| `--skip-validation` | Skip post-transformation validation checks | `false` |
 | `--list-transforms` | List all available transforms | - |
+| `-h, --help` | Display help message | - |
 
 **More examples:**
 ```bash
-# Preview changes
-npx @suites/codemod automock/2/to-suites-v3 src --dry-run
+# Preview changes (dry run)
+npx @suites/codemod automock/2/to-suites-v3 src --dry
+
+# Print output to stdout
+npx @suites/codemod automock/2/to-suites-v3 src/file.ts -p
 
 # Ignore certain files
 npx @suites/codemod automock/2/to-suites-v3 src --ignore "**/*.integration.ts"
+
+# Verbose output
+npx @suites/codemod automock/2/to-suites-v3 src --verbose
 
 # List all transforms
 npx @suites/codemod --list-transforms
@@ -246,13 +254,13 @@ From within the codemod repository:
 pnpm build
 
 # Run on a target repository
-node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry-run
+node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry
 
 # Run on test fixtures
-node dist/cli.js automock/2/to-suites-v3 fixtures/simple-final --dry-run
+node dist/cli.js automock/2/to-suites-v3 fixtures/simple-final --dry
 
 # Verbose output for debugging
-node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry-run --verbose
+node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry --verbose
 ```
 
 ### Using npm link for Testing
@@ -262,7 +270,7 @@ node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry-run --verbose
 npm link
 
 # Now use it anywhere like npx
-codemod automock/2/to-suites-v3 /path/to/repo --dry-run
+codemod automock/2/to-suites-v3 /path/to/repo --dry
 
 # Unlink when done
 npm unlink -g @suites/codemod

@@ -13,19 +13,20 @@ const program = new Command();
 program
   .name('@suites/codemod')
   .description('Code transformation tool for the Suites testing framework')
-  .version('0.1.0')
+  .version('0.1.0', '-v, --version', 'Output the current version')
+  .helpOption('-h, --help', 'Display help message')
   .argument(
     '[transform]',
     'Transform to apply (e.g., automock/2/to-suites-v3)'
   )
   .argument('[path]', 'Path to transform (file or directory)', '.')
-  .option('-d, --dry-run', 'Preview changes without writing files', false)
-  .option('-f, --force', 'Bypass git safety checks', false)
-  .option('-p, --parser <parser>', 'Parser to use (tsx, ts, babel)', 'tsx')
-  .option('-e, --extensions <exts>', 'File extensions to transform', '.ts,.tsx')
-  .option('-i, --ignore <patterns>', 'Ignore file patterns (comma-separated)')
-  .option('--print', 'Print transformed output to stdout', false)
-  .option('-v, --verbose', 'Show detailed transformation logs', false)
+  .option('-d, --dry', 'Dry run (no changes are made to files)', false)
+  .option('-f, --force', 'Bypass Git safety checks and forcibly run codemods', false)
+  .option('-p, --print', 'Print transformed files to stdout, useful for development', false)
+  .option('--verbose', 'Show more information about the transform process', false)
+  .option('--parser <parser>', 'Parser to use (tsx, ts, babel)', 'tsx')
+  .option('--extensions <exts>', 'File extensions to transform', '.ts,.tsx')
+  .option('--ignore <patterns>', 'Ignore file patterns (comma-separated)')
   .option('--skip-validation', 'Skip post-transformation validation checks', false)
   .option('--list-transforms', 'List all available transforms', false)
   .action(
@@ -70,19 +71,19 @@ program
       }
 
       try {
-        // Git safety check (unless in dry-run or force mode)
-        if (!options.dryRun && !options.force) {
+        // Git safety check (unless in dry or force mode)
+        if (!options.dry && !options.force) {
           checkGitStatus(logger);
         }
 
         // Show header with dynamic transform name
         logger.section(`🔄 Suites Codemod - ${transformInfo.description}`);
 
-        if (options.dryRun) {
-          logger.info('Running in dry-run mode (no files will be modified)');
+        if (options.dry) {
+          logger.info('Running in dry mode (no changes are made to files)');
         }
 
-        if (options.force && !options.dryRun) {
+        if (options.force && !options.dry) {
           logger.warn('Bypassing git safety checks (--force enabled)');
         }
 

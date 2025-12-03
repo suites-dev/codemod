@@ -189,15 +189,15 @@ async function transformFile(
       console.log(transformOutput.code);
       logger.info('='.repeat(60));
       result.changes.push('Printed to stdout');
-    } else if (!options.dryRun) {
+    } else if (!options.dry) {
       // Write transformed file
       await fs.writeFile(filePath, transformOutput.code, 'utf-8');
       result.changes.push('File updated');
       logger.success(`  ✓ ${path.relative(process.cwd(), filePath)}`);
     } else {
       // Dry run - just report what would change
-      result.changes.push('Would be updated (dry-run)');
-      logger.info(`  ~ ${path.relative(process.cwd(), filePath)} (dry-run)`);
+      result.changes.push('Would be updated (dry)');
+      logger.info(`  ~ ${path.relative(process.cwd(), filePath)} (dry)`);
     }
   } catch (error) {
     const errorMessage =

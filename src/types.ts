@@ -4,7 +4,7 @@ import type { Collection, JSCodeshift } from 'jscodeshift';
  * CLI options
  */
 export interface CliOptions {
-  dryRun: boolean;
+  dry: boolean;
   force: boolean;
   parser: string;
   extensions: string;
