@@ -252,52 +252,6 @@ test/
   fixtures/         # Test fixtures (before/after)
 ```
 
-## Local Development
-
-### Running Locally
-
-From within the codemod repository:
-
-```bash
-# Build first
-pnpm build
-
-# Run on a target repository
-node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry
-
-# Run on test fixtures
-node dist/cli.js automock/2/to-suites-v3 fixtures/simple-final --dry
-
-# Verbose output for debugging
-node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry --verbose
-```
-
-### Using npm link for Testing
-
-```bash
-# In the codemod repo
-npm link
-
-# Now use it anywhere like npx
-codemod automock/2/to-suites-v3 /path/to/repo --dry
-
-# Unlink when done
-npm unlink -g @suites/codemod
-```
-
-### Running Tests
-
-```bash
-# All tests
-pnpm test
-
-# Specific test file
-pnpm test path/to/test.spec.ts
-
-# With coverage
-pnpm test --coverage
-```
-
 ## License
 
 MIT (c) [Omer Morad](https://github.com/omermorad)
