@@ -10,7 +10,7 @@ Automated code transformations for Suites projects. Built on [jscodeshift](https
 ## Usage
 
 ```bash
-npx @suites/codemod <transform> <path> [options]
+npx @suites/codemod <codemod> <source> [options]
 ```
 
 **Example:**
@@ -20,7 +20,7 @@ npx @suites/codemod automock/2/to-suites-v3 src/**/*.spec.ts
 
 Run with `--dry` or `-d` to preview changes without modifying files.
 
-## Available Transforms
+## Available Codemods
 
 - **`automock/2/to-suites-v3`** - Migrate test files from Automock v2 to Suites v3 testing framework
 
@@ -84,7 +84,7 @@ describe('UserService', () => {
 | `--extensions <exts>` | File extensions to transform | `.ts,.tsx` |
 | `--ignore <patterns>` | Ignore file patterns (comma-separated) | - |
 | `--skip-validation` | Skip post-transformation validation checks | `false` |
-| `--list-transforms` | List all available transforms | - |
+| `--list-codemods` | List all available codemods | - |
 | `-h, --help` | Display help message | - |
 
 **More examples:**
@@ -101,8 +101,8 @@ npx @suites/codemod automock/2/to-suites-v3 src --ignore "**/*.integration.ts"
 # Verbose output
 npx @suites/codemod automock/2/to-suites-v3 src --verbose
 
-# List all transforms
-npx @suites/codemod --list-transforms
+# List all codemods
+npx @suites/codemod --list-codemods
 ```
 
 ## Transform Details

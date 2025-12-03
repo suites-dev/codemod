@@ -28,17 +28,17 @@ program
   .option('--extensions <exts>', 'File extensions to transform', '.ts,.tsx')
   .option('--ignore <patterns>', 'Ignore file patterns (comma-separated)')
   .option('--skip-validation', 'Skip post-transformation validation checks', false)
-  .option('--list-transforms', 'List all available transforms', false)
+  .option('--list-codemods', 'List all available codemods', false)
   .action(
     async (
       codemodArg: string | undefined,
       sourceArg: string | undefined,
-      options: CliOptions & { listTransforms?: boolean }
+      options: CliOptions & { listCodemods?: boolean }
     ) => {
       const logger = createLogger(options.verbose);
 
-      // Handle --list-transforms
-      if (options.listTransforms) {
+      // Handle --list-codemods
+      if (options.listCodemods) {
         console.log('Available codemods:\n');
         AVAILABLE_TRANSFORMS.forEach((t) => {
           console.log(`  ${t.name}`);
@@ -66,7 +66,7 @@ program
       const transformInfo = getTransform(codemodName);
       if (!transformInfo) {
         logger.error(`Unknown codemod: ${codemodName}`);
-        logger.error('Run with --list-transforms to see available codemods');
+        logger.error('Run with --list-codemods to see available codemods');
         process.exit(1);
       }
 
