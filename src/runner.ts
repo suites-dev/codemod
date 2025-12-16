@@ -39,35 +39,16 @@ export async function runTransform(
   const allFiles = await fileProcessor.discoverFiles(targetPath);
   logger.succeedSpinner(`Found ${allFiles.length} files`);
 
-  // Step 2: Filter for source framework files
-  logger.startSpinner("Analyzing source framework usage..");
-  const sourceFiles = fileProcessor.filterSourceFiles(allFiles);
-
-  if (sourceFiles.length === 0) {
-    logger.warnSpinner("No source framework files found");
-    logger.info(
-      "No files contain source framework imports. Migration not needed."
-    );
-    return createEmptySummary();
-  }
-
-  logger.succeedSpinner(
-    `${sourceFiles.length} files contain source framework imports`
-  );
-  logger.subsection(
-    `${allFiles.length - sourceFiles.length} files skipped (no source imports)`
-  );
-
-  logger.newline();
-
-  // Step 3: Transform files
+  // Step 2: Transform files
   logger.section("🔄 Transforming files...");
   const results: TransformResult[] = [];
   let filesTransformed = 0;
   let totalErrors = 0;
   let totalWarnings = 0;
+  let sourceFilesCount = 0;
 
-  for (const fileInfo of sourceFiles) {
+  for (const fileInfo of fileProcessor.filterSourceFiles(allFiles)) {
+    sourceFilesCount++;
     const result = await transformFile(
       fileInfo,
       applyTransform,
@@ -84,7 +65,24 @@ export async function runTransform(
     totalWarnings += result.warnings.length;
   }
 
-  // Step 4: Report summary
+  // Check if any files were found
+  if (sourceFilesCount === 0) {
+    logger.warnSpinner("No source framework files found");
+    logger.info(
+      "No files contain source framework imports. Migration not needed."
+    );
+    return createEmptySummary();
+  }
+
+  logger.succeedSpinner(
+    `${sourceFilesCount} files contain source framework imports`
+  );
+  logger.subsection(
+    `${allFiles.length - sourceFilesCount} files skipped (no source imports)`
+  );
+  logger.newline();
+
+  // Step 3: Report summary
   logger.newline();
   logger.section("📊 Migration Summary");
 
@@ -96,10 +94,10 @@ export async function runTransform(
     );
   }
 
-  if (sourceFiles.length - filesTransformed > 0) {
+  if (sourceFilesCount - filesTransformed > 0) {
     logger.info(
-      `  ${sourceFiles.length - filesTransformed} file${
-        sourceFiles.length - filesTransformed > 1 ? "s" : ""
+      `  ${sourceFilesCount - filesTransformed} file${
+        sourceFilesCount - filesTransformed > 1 ? "s" : ""
       } skipped (no changes needed)`
     );
   }
@@ -133,9 +131,9 @@ export async function runTransform(
   }
 
   return {
-    filesProcessed: sourceFiles.length,
+    filesProcessed: sourceFilesCount,
     filesTransformed,
-    filesSkipped: sourceFiles.length - filesTransformed,
+    filesSkipped: sourceFilesCount - filesTransformed,
     importsUpdated: 0, // TODO: Track this from transformers
     mocksConfigured: 0, // TODO: Track this from transformers
     errors: totalErrors,

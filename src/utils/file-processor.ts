@@ -57,9 +57,7 @@ export class FileProcessor {
    * Glob for files in a directory
    */
   private async globFiles(directory: string): Promise<string[]> {
-    const patterns = this.options.extensions.map(
-      (ext) => `**/*${ext}`
-    );
+    const patterns = this.options.extensions.map((ext) => `**/*${ext}`);
 
     const files: string[] = [];
 
@@ -113,18 +111,16 @@ export class FileProcessor {
   /**
    * Filter files that contain source framework imports
    * Default pattern matches Automock imports for backward compatibility
-   * Returns file info objects with path and source content to avoid double reads
+   * Yields file info objects with path and source content to avoid double reads
+   * Uses a generator for memory efficiency with large file sets
    */
-  filterSourceFiles(files: string[]): FileInfo[] {
-    return files
-      .map((filePath) => {
-        const content = this.readFile(filePath);
-        if (this.hasSourceImport(content)) {
-          return { path: filePath, source: content };
-        }
-        return null;
-      })
-      .filter((file): file is FileInfo => file !== null);
+  *filterSourceFiles(files: string[]): Generator<FileInfo> {
+    for (const filePath of files) {
+      const content = this.readFile(filePath);
+      if (this.hasSourceImport(content)) {
+        yield { path: filePath, source: content };
+      }
+    }
   }
 
   /**
@@ -132,7 +128,8 @@ export class FileProcessor {
    * Default pattern matches Automock imports for backward compatibility
    */
   private hasSourceImport(content: string): boolean {
-    const importPattern = this.options.sourceImportPattern ||
+    const importPattern =
+      this.options.sourceImportPattern ||
       /@automock\/(jest|sinon|core)['"]|from\s+['"]@automock\/(jest|sinon|core)['"]/;
     return importPattern.test(content);
   }
