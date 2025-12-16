@@ -30,8 +30,12 @@ export async function runTransform(
   logger.startSpinner('Discovering files..');
 
   const fileProcessor = createFileProcessor({
-    extensions: options.extensions.split(',').map((ext) => ext.trim()),
-    ignorePatterns: options.ignore?.split(',').map((pattern) => pattern.trim()) || [],
+    extensions: ['.ts', '.tsx'],
+    ignorePatterns: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/*.d.ts',
+    ],
   });
 
   const allFiles = await fileProcessor.discoverFiles(targetPath);
@@ -154,7 +158,6 @@ async function transformFile(
 
     // Apply transformation
     const transformOutput = applyTransform(source, {
-      skipValidation: options.skipValidation,
       parser: options.parser,
     });
 
@@ -167,19 +170,17 @@ async function transformFile(
     result.transformed = true;
 
     // Collect validation errors and warnings
-    if (!options.skipValidation) {
-      transformOutput.validation.errors.forEach((err: ValidationError) => {
-        result.errors.push(`${err.rule}: ${err.message}`);
-      });
+    transformOutput.validation.errors.forEach((err: ValidationError) => {
+      result.errors.push(`${err.rule}: ${err.message}`);
+    });
 
-      transformOutput.validation.warnings.forEach((warn: ValidationError) => {
-        result.warnings.push(`${warn.rule}: ${warn.message}`);
-      });
+    transformOutput.validation.warnings.forEach((warn: ValidationError) => {
+      result.warnings.push(`${warn.rule}: ${warn.message}`);
+    });
 
-      transformOutput.validation.criticalErrors.forEach((err: ValidationError) => {
-        result.errors.push(`[CRITICAL] ${err.rule}: ${err.message}`);
-      });
-    }
+    transformOutput.validation.criticalErrors.forEach((err: ValidationError) => {
+      result.errors.push(`[CRITICAL] ${err.rule}: ${err.message}`);
+    });
 
     // Handle --print flag (output to stdout instead of writing)
     if (options.print) {
@@ -189,21 +190,21 @@ async function transformFile(
       console.log(transformOutput.code);
       logger.info('='.repeat(60));
       result.changes.push('Printed to stdout');
-    } else if (!options.dryRun) {
+    } else if (!options.dry) {
       // Write transformed file
       await fs.writeFile(filePath, transformOutput.code, 'utf-8');
       result.changes.push('File updated');
-      logger.success(`  ✓ ${path.relative(process.cwd(), filePath)}`);
+      logger.success(`  ${path.relative(process.cwd(), filePath)}`);
     } else {
       // Dry run - just report what would change
-      result.changes.push('Would be updated (dry-run)');
-      logger.info(`  ~ ${path.relative(process.cwd(), filePath)} (dry-run)`);
+      result.changes.push('Would be updated (dry)');
+      logger.info(`  ~ ${path.relative(process.cwd(), filePath)} (dry)`);
     }
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
     result.errors.push(errorMessage);
-    logger.error(`  ✗ ${path.relative(process.cwd(), filePath)}: ${errorMessage}`);
+    logger.error(`  ${path.relative(process.cwd(), filePath)}: ${errorMessage}`);
   }
 
   return result;

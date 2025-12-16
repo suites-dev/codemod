@@ -65,14 +65,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm run build
+      - name: Run lint
+        run: pnpm run lint
 
       - name: Run tests
         run: pnpm test
 
-      - name: Run lint
-        run: pnpm run lint
+      - name: Build
+        run: pnpm run build
 
       - name: Publish to NPM
         env:

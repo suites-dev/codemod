@@ -1,12 +1,12 @@
-import { TestBed } from '@automock/jest';
+import { TestBed } from '@suites/unit';
 
 describe('UserService', () => {
   let service: UserService;
 
-  beforeAll(() => {
-    const { unit } = TestBed.create(UserService)
+  beforeAll(async () => {
+    const { unit } = await TestBed.solitary(UserService)
       .mock(UserRepository)
-      .using({
+      .final({
         findById: (id: string) => Promise.resolve({ id, name: 'Test' })
       })
       .compile();

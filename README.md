@@ -10,7 +10,7 @@ Automated code transformations for Suites projects. Built on [jscodeshift](https
 ## Usage
 
 ```bash
-npx @suites/codemod <transform> <path> [options]
+npx @suites/codemod <codemod> <source> [options]
 ```
 
 **Example:**
@@ -18,9 +18,9 @@ npx @suites/codemod <transform> <path> [options]
 npx @suites/codemod automock/2/to-suites-v3 src/**/*.spec.ts
 ```
 
-Run with `--dry-run` to preview changes without modifying files.
+Run with `--dry` or `-d` to preview changes without modifying files.
 
-## Available Transforms
+## Available Codemods
 
 - **`automock/2/to-suites-v3`** - Migrate test files from Automock v2 to Suites v3 testing framework
 
@@ -62,30 +62,40 @@ describe('UserService', () => {
 });
 ```
 
-## CLI Options
+## CLI Reference
+
+### Arguments
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `codemod` | Codemod slug to run. See available transforms below. | - |
+| `source` | Path to source files or directory to transform including glob patterns. | `.` |
+
+### Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-d, --dry-run` | Preview changes without writing files | `false` |
-| `-f, --force` | Bypass git safety checks | `false` |
-| `-p, --parser <parser>` | Parser: `tsx`, `ts`, `babel` | `tsx` |
-| `-e, --extensions <exts>` | File extensions to transform | `.ts,.tsx` |
-| `-i, --ignore <patterns>` | Ignore file patterns (comma-separated) | - |
-| `--print` | Print output to stdout | `false` |
-| `-v, --verbose` | Show detailed logs | `false` |
-| `--skip-validation` | Skip validation checks | `false` |
-| `--list-transforms` | List all available transforms | - |
+| `-v, --version` | Output the current version | - |
+| `-d, --dry` | Dry run (no changes are made to files) | `false` |
+| `-f, --force` | Bypass Git safety checks and forcibly run codemods | `false` |
+| `-p, --print` | Print transformed files to stdout, useful for development | `false` |
+| `--verbose` | Show more information about the transform process | `false` |
+| `--parser <parser>` | Parser to use: `tsx`, `ts`, `babel` | `tsx` |
+| `-h, --help` | Display help message | - |
 
-**More examples:**
+**Examples:**
 ```bash
-# Preview changes
-npx @suites/codemod automock/2/to-suites-v3 src --dry-run
+# Preview changes (dry run)
+npx @suites/codemod automock/2/to-suites-v3 src --dry
 
-# Ignore certain files
-npx @suites/codemod automock/2/to-suites-v3 src --ignore "**/*.integration.ts"
+# Print output to stdout
+npx @suites/codemod automock/2/to-suites-v3 src/file.ts -p
 
-# List all transforms
-npx @suites/codemod --list-transforms
+# Verbose output
+npx @suites/codemod automock/2/to-suites-v3 src --verbose
+
+# Use different parser
+npx @suites/codemod automock/2/to-suites-v3 src --parser babel
 ```
 
 ## Transform Details
@@ -132,7 +142,7 @@ Built-in validation ensures:
 - Commit your changes or use `--force` to bypass
 
 **"No files found"**
-- Check your path and file extensions: `--extensions .spec.ts,.test.ts`
+- Check your source path and ensure it contains `.ts` or `.tsx` files
 
 **Parser errors**
 - Try the babel parser: `--parser babel`
@@ -140,7 +150,7 @@ Built-in validation ensures:
 **Validation failed**
 - Run with `--verbose` for detailed logs
 - Review validation errors in the output
-- Use `--skip-validation` to bypass (not recommended)
+- Fix the issues reported by validators
 
 For more help, see [troubleshooting guide](https://github.com/suites-dev/codemod/issues) or open an issue.
 
@@ -233,52 +243,6 @@ test/
   integration/      # Integration tests
   transforms/       # Transform unit tests
   fixtures/         # Test fixtures (before/after)
-```
-
-## Local Development
-
-### Running Locally
-
-From within the codemod repository:
-
-```bash
-# Build first
-pnpm build
-
-# Run on a target repository
-node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry-run
-
-# Run on test fixtures
-node dist/cli.js automock/2/to-suites-v3 fixtures/simple-final --dry-run
-
-# Verbose output for debugging
-node dist/cli.js automock/2/to-suites-v3 /path/to/repo --dry-run --verbose
-```
-
-### Using npm link for Testing
-
-```bash
-# In the codemod repo
-npm link
-
-# Now use it anywhere like npx
-codemod automock/2/to-suites-v3 /path/to/repo --dry-run
-
-# Unlink when done
-npm unlink -g @suites/codemod
-```
-
-### Running Tests
-
-```bash
-# All tests
-pnpm test
-
-# Specific test file
-pnpm test path/to/test.spec.ts
-
-# With coverage
-pnpm test --coverage
 ```
 
 ## License

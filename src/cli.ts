@@ -13,43 +13,30 @@ const program = new Command();
 program
   .name('@suites/codemod')
   .description('Code transformation tool for the Suites testing framework')
-  .version('0.1.0')
+  .version('0.1.0', '-v, --version', 'Output the current version')
+  .helpOption('-h, --help', 'Display help message')
   .argument(
-    '[transform]',
-    'Transform to apply (e.g., automock/2/to-suites-v3)'
+    '[codemod]',
+    'Codemod slug to run. See "https://github.com/suites-dev/codemod".'
   )
-  .argument('[path]', 'Path to transform (file or directory)', '.')
-  .option('-d, --dry-run', 'Preview changes without writing files', false)
-  .option('-f, --force', 'Bypass git safety checks', false)
-  .option('-p, --parser <parser>', 'Parser to use (tsx, ts, babel)', 'tsx')
-  .option('-e, --extensions <exts>', 'File extensions to transform', '.ts,.tsx')
-  .option('-i, --ignore <patterns>', 'Ignore file patterns (comma-separated)')
-  .option('--print', 'Print transformed output to stdout', false)
-  .option('-v, --verbose', 'Show detailed transformation logs', false)
-  .option('--skip-validation', 'Skip post-transformation validation checks', false)
-  .option('--list-transforms', 'List all available transforms', false)
+  .argument('[source]', 'Path to source files or directory to transform including glob patterns.', '.')
+  .option('-d, --dry', 'Dry run (no changes are made to files)', false)
+  .option('-f, --force', 'Bypass Git safety checks and forcibly run codemods', false)
+  .option('-p, --print', 'Print transformed files to stdout, useful for development', false)
+  .option('--verbose', 'Show more information about the transform process', false)
+  .option('--parser <parser>', 'Parser to use (tsx, ts, babel)', 'tsx')
   .action(
     async (
-      transformArg: string | undefined,
-      pathArg: string | undefined,
-      options: CliOptions & { listTransforms?: boolean }
+      codemodArg: string | undefined,
+      sourceArg: string | undefined,
+      options: CliOptions
     ) => {
       const logger = createLogger(options.verbose);
 
-      // Handle --list-transforms
-      if (options.listTransforms) {
-        console.log('Available transforms:\n');
-        AVAILABLE_TRANSFORMS.forEach((t) => {
-          console.log(`  ${t.name}`);
-          console.log(`    ${t.description}\n`);
-        });
-        return;
-      }
-
-      // Validate transform is provided
-      if (!transformArg) {
-        logger.error('Transform argument required.');
-        logger.info('\nAvailable transforms:');
+      // Validate codemod is provided
+      if (!codemodArg) {
+        logger.error('Codemod argument required.');
+        logger.info('\nAvailable codemods:');
         AVAILABLE_TRANSFORMS.forEach((t) => {
           console.log(`  ${t.name}`);
           console.log(`    ${t.description}\n`);
@@ -59,37 +46,41 @@ program
         process.exit(1);
       }
 
-      const transformName = transformArg;
-      const targetPath = pathArg || '.';
+      const codemodName = codemodArg;
+      const sourcePath = sourceArg || '.';
 
-      const transformInfo = getTransform(transformName);
+      const transformInfo = getTransform(codemodName);
       if (!transformInfo) {
-        logger.error(`Unknown transform: ${transformName}`);
-        logger.error('Run with --list-transforms to see available transforms');
+        logger.error(`Unknown codemod: ${codemodName}`);
+        logger.info('\nAvailable codemods:');
+        AVAILABLE_TRANSFORMS.forEach((t) => {
+          console.log(`  ${t.name}`);
+          console.log(`    ${t.description}\n`);
+        });
         process.exit(1);
       }
 
       try {
-        // Git safety check (unless in dry-run or force mode)
-        if (!options.dryRun && !options.force) {
+        // Git safety check (unless in dry or force mode)
+        if (!options.dry && !options.force) {
           checkGitStatus(logger);
         }
 
         // Show header with dynamic transform name
         logger.section(`🔄 Suites Codemod - ${transformInfo.description}`);
 
-        if (options.dryRun) {
-          logger.info('Running in dry-run mode (no files will be modified)');
+        if (options.dry) {
+          logger.info('Running in dry mode (no changes are made to files)');
         }
 
-        if (options.force && !options.dryRun) {
+        if (options.force && !options.dry) {
           logger.warn('Bypassing git safety checks (--force enabled)');
         }
 
         logger.newline();
 
         // Run the transformation
-        await runTransform(targetPath, transformInfo, options, logger);
+        await runTransform(sourcePath, transformInfo, options, logger);
       } catch (error) {
         logger.newline();
         logger.error('Transformation failed:');
