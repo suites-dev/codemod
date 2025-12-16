@@ -8,7 +8,7 @@ import type {
 } from './types';
 import type { Logger } from './utils/logger';
 import type { TransformInfo } from './transforms';
-import { createFileProcessor } from './utils/file-processor';
+import { createFileProcessor, type FileInfo } from './utils/file-processor';
 
 /**
  * Run the transformation on the target path
@@ -24,47 +24,37 @@ export async function runTransform(
   const applyTransform = transformModule.applyTransform;
 
   if (!applyTransform) {
-    throw new Error(`Transform ${transformInfo.name} does not export applyTransform function`);
+    throw new Error(
+      `Transform ${transformInfo.name} does not export applyTransform function`
+    );
   }
   // Step 1: Discover files
   logger.startSpinner('Discovering files..');
 
   const fileProcessor = createFileProcessor({
     extensions: ['.ts', '.tsx'],
-    ignorePatterns: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/*.d.ts',
-    ],
+    ignorePatterns: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
   });
 
   const allFiles = await fileProcessor.discoverFiles(targetPath);
   logger.succeedSpinner(`Found ${allFiles.length} files`);
 
-  // Step 2: Filter for source framework files
-  logger.startSpinner('Analyzing source framework usage..');
-  const sourceFiles = fileProcessor.filterSourceFiles(allFiles);
-
-  if (sourceFiles.length === 0) {
-    logger.warnSpinner('No source framework files found');
-    logger.info('No files contain source framework imports. Migration not needed.');
-    return createEmptySummary();
-  }
-
-  logger.succeedSpinner(`${sourceFiles.length} files contain source framework imports`);
-  logger.subsection(`${allFiles.length - sourceFiles.length} files skipped (no source imports)`);
-
-  logger.newline();
-
-  // Step 3: Transform files
+  // Step 2: Transform files
   logger.section('🔄 Transforming files...');
   const results: TransformResult[] = [];
   let filesTransformed = 0;
   let totalErrors = 0;
   let totalWarnings = 0;
+  let sourceFilesCount = 0;
 
-  for (const filePath of sourceFiles) {
-    const result = await transformFile(filePath, applyTransform, options, logger);
+  for (const fileInfo of fileProcessor.filterSourceFiles(allFiles)) {
+    sourceFilesCount++;
+    const result = await transformFile(
+      fileInfo,
+      applyTransform,
+      options,
+      logger
+    );
     results.push(result);
 
     if (result.transformed) {
@@ -75,20 +65,47 @@ export async function runTransform(
     totalWarnings += result.warnings.length;
   }
 
-  // Step 4: Report summary
+  // Check if any files were found
+  if (sourceFilesCount === 0) {
+    logger.warnSpinner('No source framework files found');
+    logger.info(
+      'No files contain source framework imports. Migration not needed.'
+    );
+    return createEmptySummary();
+  }
+
+  logger.succeedSpinner(
+    `${sourceFilesCount} files contain source framework imports`
+  );
+  logger.subsection(
+    `${allFiles.length - sourceFilesCount} files skipped (no source imports)`
+  );
+  logger.newline();
+
+  // Step 3: Report summary
   logger.newline();
   logger.section('📊 Migration Summary');
 
   if (filesTransformed > 0) {
-    logger.success(`${filesTransformed} file${filesTransformed > 1 ? 's' : ''} transformed successfully`);
+    logger.success(
+      `${filesTransformed} file${
+        filesTransformed > 1 ? 's' : ''
+      } transformed successfully`
+    );
   }
 
-  if (sourceFiles.length - filesTransformed > 0) {
-    logger.info(`  ${sourceFiles.length - filesTransformed} file${sourceFiles.length - filesTransformed > 1 ? 's' : ''} skipped (no changes needed)`);
+  if (sourceFilesCount - filesTransformed > 0) {
+    logger.info(
+      `  ${sourceFilesCount - filesTransformed} file${
+        sourceFilesCount - filesTransformed > 1 ? 's' : ''
+      } skipped (no changes needed)`
+    );
   }
 
   if (totalWarnings > 0) {
-    logger.warn(`${totalWarnings} warning${totalWarnings > 1 ? 's' : ''} found`);
+    logger.warn(
+      `${totalWarnings} warning${totalWarnings > 1 ? 's' : ''} found`
+    );
   }
 
   if (totalErrors > 0) {
@@ -114,11 +131,9 @@ export async function runTransform(
   }
 
   return {
-    filesProcessed: sourceFiles.length,
+    filesProcessed: sourceFilesCount,
     filesTransformed,
-    filesSkipped: sourceFiles.length - filesTransformed,
-    importsUpdated: 0, // TODO: Track this from transformers
-    mocksConfigured: 0, // TODO: Track this from transformers
+    filesSkipped: sourceFilesCount - filesTransformed,
     errors: totalErrors,
     warnings: totalWarnings,
     results,
@@ -129,13 +144,16 @@ export async function runTransform(
  * Transform a single file
  */
 async function transformFile(
-  filePath: string,
-  applyTransform: (source: string, options?: { skipValidation?: boolean; parser?: string }) => any,
+  fileInfo: FileInfo,
+  applyTransform: (
+    source: string,
+    options?: { skipValidation?: boolean; parser?: string }
+  ) => any,
   options: CliOptions,
   logger: Logger
 ): Promise<TransformResult> {
   const result: TransformResult = {
-    filePath,
+    filePath: fileInfo.path,
     transformed: false,
     changes: [],
     warnings: [],
@@ -143,9 +161,6 @@ async function transformFile(
   };
 
   try {
-    // Read source file
-    let source = await fs.readFile(filePath, 'utf-8');
-
     // Note: Preprocessing has been disabled because the parser fallback strategy
     // now uses ts/tsx parsers first, which handle TypeScript syntax correctly.
     // The preprocessing was breaking valid TypeScript generic syntax like:
@@ -157,13 +172,15 @@ async function transformFile(
     // more carefully to avoid breaking valid TypeScript patterns.
 
     // Apply transformation
-    const transformOutput = applyTransform(source, {
+    const transformOutput = applyTransform(fileInfo.source, {
       parser: options.parser,
     });
 
     // Check if code actually changed
-    if (transformOutput.code === source) {
-      logger.debug(`  ⊘ ${path.relative(process.cwd(), filePath)} (no changes)`);
+    if (transformOutput.code === fileInfo.source) {
+      logger.debug(
+        `  ⊘ ${path.relative(process.cwd(), fileInfo.path)} (no changes)`
+      );
       return result;
     }
 
@@ -178,89 +195,52 @@ async function transformFile(
       result.warnings.push(`${warn.rule}: ${warn.message}`);
     });
 
-    transformOutput.validation.criticalErrors.forEach((err: ValidationError) => {
-      result.errors.push(`[CRITICAL] ${err.rule}: ${err.message}`);
-    });
+    transformOutput.validation.criticalErrors.forEach(
+      (err: ValidationError) => {
+        result.errors.push(`[CRITICAL] ${err.rule}: ${err.message}`);
+      }
+    );
+
+    // Skip write if there are critical errors (unless explicitly allowed)
+    const hasCriticalErrors =
+      transformOutput.validation.criticalErrors.length > 0;
+    if (hasCriticalErrors && !options.allowCriticalErrors) {
+      logger.error(
+        `  ✗ ${path.relative(
+          process.cwd(),
+          fileInfo.path
+        )} (skipped due to critical errors)`
+      );
+      result.changes.push('Skipped (critical validation errors)');
+      return result;
+    }
 
     // Handle --print flag (output to stdout instead of writing)
     if (options.print) {
       logger.info(`\n${'='.repeat(60)}`);
-      logger.info(`File: ${filePath}`);
+      logger.info(`File: ${fileInfo.path}`);
       logger.info('='.repeat(60));
       console.log(transformOutput.code);
       logger.info('='.repeat(60));
       result.changes.push('Printed to stdout');
     } else if (!options.dry) {
       // Write transformed file
-      await fs.writeFile(filePath, transformOutput.code, 'utf-8');
+      await fs.writeFile(fileInfo.path, transformOutput.code, 'utf-8');
       result.changes.push('File updated');
-      logger.success(`  ${path.relative(process.cwd(), filePath)}`);
+      logger.success(`  ${path.relative(process.cwd(), fileInfo.path)}`);
     } else {
       // Dry run - just report what would change
       result.changes.push('Would be updated (dry)');
-      logger.info(`  ~ ${path.relative(process.cwd(), filePath)} (dry)`);
+      logger.info(`  ~ ${path.relative(process.cwd(), fileInfo.path)} (dry)`);
     }
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error occurred';
     result.errors.push(errorMessage);
-    logger.error(`  ${path.relative(process.cwd(), filePath)}: ${errorMessage}`);
+    logger.error(
+      `  ${path.relative(process.cwd(), fileInfo.path)}: ${errorMessage}`
+    );
   }
-
-  return result;
-}
-
-/**
- * Pre-process TypeScript import alias declarations
- * Converts: import X = jest.Y; → const X = jest.Y;
- * This syntax is TypeScript-specific and causes babel parser to fail
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function preprocessImportAliases(source: string): string {
-  // Match: import identifier = jest.something;
-  // or:   import identifier = Sinon.something;
-  return source.replace(
-    /^import\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(jest|sinon|Sinon)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*;/gm,
-    'const $1 = $2.$3;'
-  );
-}
-
-/**
- * Pre-process source to convert old-style type casts that confuse the parser
- * Converts: <Type>value → value as Type
- * This prevents parse errors in .tsx files where <> is ambiguous (JSX vs type cast)
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function preprocessTypeCasts(source: string): string {
-  // Match common patterns:
-  // <Type>identifier
-  // <Type>{} or <Type>{ ... }
-  // <Type>[] or <Type>[...]
-  // <Type>(...)
-
-  // Pattern 1: <Type>identifier or <Type>identifier.property
-  let result = source.replace(
-    /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)/g,
-    '$2 as $1'
-  );
-
-  // Pattern 2: <Type>{} or <Type>{ ... }
-  result = result.replace(
-    /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\{[^}]*\})/g,
-    '($2 as $1)'
-  );
-
-  // Pattern 3: <Type>[] or <Type>[...]
-  result = result.replace(
-    /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\[[^\]]*\])/g,
-    '($2 as $1)'
-  );
-
-  // Pattern 4: <Type>(...)
-  result = result.replace(
-    /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\([^)]*\))/g,
-    '($2 as $1)'
-  );
 
   return result;
 }
@@ -273,8 +253,6 @@ function createEmptySummary(): MigrationSummary {
     filesProcessed: 0,
     filesTransformed: 0,
     filesSkipped: 0,
-    importsUpdated: 0,
-    mocksConfigured: 0,
     errors: 0,
     warnings: 0,
     results: [],
