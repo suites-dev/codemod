@@ -9,6 +9,7 @@ export interface CliOptions {
   parser: string;
   print: boolean;
   verbose: boolean;
+  allowCriticalErrors: boolean;
 }
 
 /**
