@@ -124,15 +124,11 @@ export class Logger {
    */
   summary(stats: {
     filesTransformed: number;
-    importsUpdated: number;
-    mocksConfigured: number;
     errors: number;
     warnings: number;
   }): void {
     this.section('✅ Migration complete!');
     this.subsection(`${stats.filesTransformed} files transformed`);
-    this.subsection(`${stats.importsUpdated} imports updated`);
-    this.subsection(`${stats.mocksConfigured} mocks configured`);
     if (stats.errors > 0) {
       this.subsection(chalk.red(`${stats.errors} errors`));
     }

@@ -107,8 +107,6 @@ export interface MigrationSummary {
   filesProcessed: number;
   filesTransformed: number;
   filesSkipped: number;
-  importsUpdated: number;
-  mocksConfigured: number;
   errors: number;
   warnings: number;
   results: TransformResult[];

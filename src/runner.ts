@@ -1,14 +1,14 @@
-import * as fs from "fs/promises";
-import * as path from "path";
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import type {
   CliOptions,
   MigrationSummary,
   TransformResult,
   ValidationError,
-} from "./types";
-import type { Logger } from "./utils/logger";
-import type { TransformInfo } from "./transforms";
-import { createFileProcessor, type FileInfo } from "./utils/file-processor";
+} from './types';
+import type { Logger } from './utils/logger';
+import type { TransformInfo } from './transforms';
+import { createFileProcessor, type FileInfo } from './utils/file-processor';
 
 /**
  * Run the transformation on the target path
@@ -29,18 +29,18 @@ export async function runTransform(
     );
   }
   // Step 1: Discover files
-  logger.startSpinner("Discovering files..");
+  logger.startSpinner('Discovering files..');
 
   const fileProcessor = createFileProcessor({
-    extensions: [".ts", ".tsx"],
-    ignorePatterns: ["**/node_modules/**", "**/dist/**", "**/*.d.ts"],
+    extensions: ['.ts', '.tsx'],
+    ignorePatterns: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
   });
 
   const allFiles = await fileProcessor.discoverFiles(targetPath);
   logger.succeedSpinner(`Found ${allFiles.length} files`);
 
   // Step 2: Transform files
-  logger.section("🔄 Transforming files...");
+  logger.section('🔄 Transforming files...');
   const results: TransformResult[] = [];
   let filesTransformed = 0;
   let totalErrors = 0;
@@ -67,9 +67,9 @@ export async function runTransform(
 
   // Check if any files were found
   if (sourceFilesCount === 0) {
-    logger.warnSpinner("No source framework files found");
+    logger.warnSpinner('No source framework files found');
     logger.info(
-      "No files contain source framework imports. Migration not needed."
+      'No files contain source framework imports. Migration not needed.'
     );
     return createEmptySummary();
   }
@@ -84,12 +84,12 @@ export async function runTransform(
 
   // Step 3: Report summary
   logger.newline();
-  logger.section("📊 Migration Summary");
+  logger.section('📊 Migration Summary');
 
   if (filesTransformed > 0) {
     logger.success(
       `${filesTransformed} file${
-        filesTransformed > 1 ? "s" : ""
+        filesTransformed > 1 ? 's' : ''
       } transformed successfully`
     );
   }
@@ -97,25 +97,25 @@ export async function runTransform(
   if (sourceFilesCount - filesTransformed > 0) {
     logger.info(
       `  ${sourceFilesCount - filesTransformed} file${
-        sourceFilesCount - filesTransformed > 1 ? "s" : ""
+        sourceFilesCount - filesTransformed > 1 ? 's' : ''
       } skipped (no changes needed)`
     );
   }
 
   if (totalWarnings > 0) {
     logger.warn(
-      `${totalWarnings} warning${totalWarnings > 1 ? "s" : ""} found`
+      `${totalWarnings} warning${totalWarnings > 1 ? 's' : ''} found`
     );
   }
 
   if (totalErrors > 0) {
-    logger.error(`${totalErrors} error${totalErrors > 1 ? "s" : ""} found`);
+    logger.error(`${totalErrors} error${totalErrors > 1 ? 's' : ''} found`);
   }
 
   // Show detailed results if verbose
   if (options.verbose) {
     logger.newline();
-    logger.subsection("Detailed Results:");
+    logger.subsection('Detailed Results:');
     results.forEach((result) => {
       if (result.transformed) {
         logger.success(`  ${result.filePath}`);
@@ -134,8 +134,6 @@ export async function runTransform(
     filesProcessed: sourceFilesCount,
     filesTransformed,
     filesSkipped: sourceFilesCount - filesTransformed,
-    importsUpdated: 0, // TODO: Track this from transformers
-    mocksConfigured: 0, // TODO: Track this from transformers
     errors: totalErrors,
     warnings: totalWarnings,
     results,
@@ -213,31 +211,31 @@ async function transformFile(
           fileInfo.path
         )} (skipped due to critical errors)`
       );
-      result.changes.push("Skipped (critical validation errors)");
+      result.changes.push('Skipped (critical validation errors)');
       return result;
     }
 
     // Handle --print flag (output to stdout instead of writing)
     if (options.print) {
-      logger.info(`\n${"=".repeat(60)}`);
+      logger.info(`\n${'='.repeat(60)}`);
       logger.info(`File: ${fileInfo.path}`);
-      logger.info("=".repeat(60));
+      logger.info('='.repeat(60));
       console.log(transformOutput.code);
-      logger.info("=".repeat(60));
-      result.changes.push("Printed to stdout");
+      logger.info('='.repeat(60));
+      result.changes.push('Printed to stdout');
     } else if (!options.dry) {
       // Write transformed file
-      await fs.writeFile(fileInfo.path, transformOutput.code, "utf-8");
-      result.changes.push("File updated");
+      await fs.writeFile(fileInfo.path, transformOutput.code, 'utf-8');
+      result.changes.push('File updated');
       logger.success(`  ${path.relative(process.cwd(), fileInfo.path)}`);
     } else {
       // Dry run - just report what would change
-      result.changes.push("Would be updated (dry)");
+      result.changes.push('Would be updated (dry)');
       logger.info(`  ~ ${path.relative(process.cwd(), fileInfo.path)} (dry)`);
     }
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : "Unknown error occurred";
+      error instanceof Error ? error.message : 'Unknown error occurred';
     result.errors.push(errorMessage);
     logger.error(
       `  ${path.relative(process.cwd(), fileInfo.path)}: ${errorMessage}`
@@ -258,7 +256,7 @@ function preprocessImportAliases(source: string): string {
   // or:   import identifier = Sinon.something;
   return source.replace(
     /^import\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(jest|sinon|Sinon)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*;/gm,
-    "const $1 = $2.$3;"
+    'const $1 = $2.$3;'
   );
 }
 
@@ -278,25 +276,25 @@ function preprocessTypeCasts(source: string): string {
   // Pattern 1: <Type>identifier or <Type>identifier.property
   let result = source.replace(
     /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)/g,
-    "$2 as $1"
+    '$2 as $1'
   );
 
   // Pattern 2: <Type>{} or <Type>{ ... }
   result = result.replace(
     /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\{[^}]*\})/g,
-    "($2 as $1)"
+    '($2 as $1)'
   );
 
   // Pattern 3: <Type>[] or <Type>[...]
   result = result.replace(
     /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\[[^\]]*\])/g,
-    "($2 as $1)"
+    '($2 as $1)'
   );
 
   // Pattern 4: <Type>(...)
   result = result.replace(
     /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\([^)]*\))/g,
-    "($2 as $1)"
+    '($2 as $1)'
   );
 
   return result;
@@ -310,8 +308,6 @@ function createEmptySummary(): MigrationSummary {
     filesProcessed: 0,
     filesTransformed: 0,
     filesSkipped: 0,
-    importsUpdated: 0,
-    mocksConfigured: 0,
     errors: 0,
     warnings: 0,
     results: [],
