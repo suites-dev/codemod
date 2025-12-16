@@ -1,5 +1,4 @@
-import jscodeshift from 'jscodeshift';
-import type { AnalysisContext, TransformOutput } from './types';
+import type { AnalysisContext } from './types';
 import { detectSuitesContext } from './analyzers/context-detector';
 import { detectRetrievals } from './analyzers/retrieval-detector';
 import { analyzeAllMockConfigurations } from './analyzers/stub-detector';
@@ -10,33 +9,16 @@ import { transformGlobalJest } from './transforms/global-jest-transformer';
 import { cleanupObsoleteTypeCasts } from './transforms/cleanup-transformer';
 import { validateTransformedCode } from './validators';
 
+import type { FileInfo, API } from 'jscodeshift';
+
 /**
- * Main transformation orchestrator
- * Applies all transformations in the correct order and validates the result
+ * Apply transformations using jscodeshift's standard transform signature
+ * This is the main transformation function that follows jscodeshift conventions
  */
-export function applyTransform(
-  source: string,
-  options?: { skipValidation?: boolean; parser?: string }
-): TransformOutput {
-  // Input validation
-  if (typeof source !== 'string') {
-    throw new TypeError('Input must be a string');
-  }
-
-  if (source.length === 0) {
-    return {
-      code: source,
-      validation: {
-        success: true,
-        errors: [],
-        warnings: [],
-        criticalErrors: [],
-      },
-    };
-  }
-
-  // Parse with fallback strategy
-  const { j, root } = parseSourceWithFallback(source, options?.parser);
+export function transform(fileInfo: FileInfo, api: API): string {
+  const j = api.jscodeshift;
+  const root = j(fileInfo.source);
+  const source = fileInfo.source;
 
   // Phase 1: Analysis
   const context: AnalysisContext = {
@@ -74,17 +56,31 @@ export function applyTransform(
   // Do this last to clean up any remaining type casts
   cleanupObsoleteTypeCasts(j, root);
 
-  // Phase 6: Post-transformation validation
+  // Phase 7: Post-transformation validation
   const transformedSource = root.toSource();
 
-  const validation = options?.skipValidation
-    ? { success: true, errors: [], warnings: [], criticalErrors: [] }
-    : validateTransformedCode(j, j(transformedSource), transformedSource);
+  const validationResult = validateTransformedCode(
+    j,
+    j(transformedSource),
+    transformedSource
+  );
 
-  return {
-    code: transformedSource,
-    validation,
-  };
+  // Fail if critical errors are found
+  if (validationResult.criticalErrors.length > 0) {
+    const errorMessages = validationResult.criticalErrors
+      .map((error) => {
+        const location = error.line
+          ? ` (line ${error.line}${error.column ? `, column ${error.column}` : ''})`
+          : '';
+        return `  - ${error.message}${location}`;
+      })
+      .join('\n');
+    throw new Error(
+      `Transformation failed with ${validationResult.criticalErrors.length} critical error(s):\n${errorMessages}`
+    );
+  }
+
+  return transformedSource;
 }
 
 /**
@@ -99,49 +95,4 @@ function checkNeedsMockedImport(source: string): boolean {
  */
 function checkNeedsUnitReferenceImport(source: string): boolean {
   return /:\s*UnitReference|<UnitReference>/.test(source);
-}
-
-/**
- * Parse source code with automatic fallback strategy
- * Tries parsers in order: specified parser -> ts -> tsx -> babel
- * This handles the 38 parse error cases from PARSE_ERRORS.md
- *
- * Note: We prefer TypeScript parsers (ts/tsx) over babel because:
- * - Babel can parse TypeScript but may not handle all TS patterns correctly
- * - For example, babel misses TestBed.create<Generic>() calls (parses 5 instead of 6)
- * - The ts/tsx parsers are more accurate for TypeScript code
- */
-function parseSourceWithFallback(
-  source: string,
-  preferredParser?: string
-): { j: jscodeshift.JSCodeshift; root: ReturnType<jscodeshift.JSCodeshift> } {
-  // Define parser priority - prefer TS parsers for better TypeScript support
-  const parserPriority = preferredParser
-    ? [preferredParser, 'ts', 'tsx', 'babel']
-    : ['ts', 'tsx', 'babel'];
-
-  // Remove duplicates while preserving order
-  const parsersToTry = [...new Set(parserPriority)];
-
-  let lastError: Error | null = null;
-
-  for (const parser of parsersToTry) {
-    try {
-      const j = jscodeshift.withParser(parser);
-      const root = j(source);
-
-      // Successfully parsed - return immediately
-      return { j, root };
-    } catch (error) {
-      // Store error and continue to next parser
-      lastError = error instanceof Error ? error : new Error(String(error));
-      continue;
-    }
-  }
-
-  // All parsers failed - throw detailed error
-  throw new Error(
-    `Failed to parse source code with any available parser (tried: ${parsersToTry.join(', ')}). ` +
-      `Last error: ${lastError?.message || 'Unknown error'}`
-  );
 }

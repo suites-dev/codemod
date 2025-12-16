@@ -1,17 +1,11 @@
-import * as fs from 'fs/promises';
 import * as path from 'path';
-import type {
-  CliOptions,
-  MigrationSummary,
-  TransformResult,
-  ValidationError,
-} from './types';
+import { run } from 'jscodeshift/src/Runner';
+import type { CliOptions, MigrationSummary } from './types';
 import type { Logger } from './utils/logger';
 import type { TransformInfo } from './transforms';
-import { createFileProcessor, type FileInfo } from './utils/file-processor';
 
 /**
- * Run the transformation on the target path
+ * Run the transformation on the target path using jscodeshift's run function
  */
 export async function runTransform(
   targetPath: string,
@@ -19,54 +13,39 @@ export async function runTransform(
   options: CliOptions,
   logger: Logger
 ): Promise<MigrationSummary> {
-  // Load the transform module dynamically
-  const transformModule = await import(transformInfo.path);
-  const applyTransform = transformModule.applyTransform;
+  // Get the path to the transform
+  // We need to use the compiled version in dist
+  // In development, __dirname points to dist/ after compilation
+  const transformPath = path.resolve(__dirname, transformInfo.path + '.js');
 
-  if (!applyTransform) {
-    throw new Error(
-      `Transform ${transformInfo.name} does not export applyTransform function`
-    );
-  }
-  // Step 1: Discover files
-  logger.startSpinner('Discovering files..');
+  // Prepare jscodeshift options
+  // Pass our custom options through jscodeshift's options object
+  // When print is enabled, also enable dry mode to prevent file writes
+  const jscodeshiftOptions = {
+    dry: options.dry || options.print,
+    verbose: options.verbose ? 2 : 0,
+    extensions: 'ts,tsx',
+    ignorePattern: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
+    parser: options.parser || 'ts',
+    runInBand: false, // Use parallel processing
+    babel: false, // Don't use babel parser
+    // Pass our custom options
+    allowCriticalErrors: options.allowCriticalErrors,
+    print: options.print,
+  };
 
-  const fileProcessor = createFileProcessor({
-    extensions: ['.ts', '.tsx'],
-    ignorePatterns: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
-  });
+  // Step 1: Discover and transform files using jscodeshift
+  const jscodeshiftResults = await run(
+    transformPath,
+    [targetPath],
+    jscodeshiftOptions
+  );
 
-  const allFiles = await fileProcessor.discoverFiles(targetPath);
-  logger.succeedSpinner(`Found ${allFiles.length} files`);
-
-  // Step 2: Transform files
-  logger.section('🔄 Transforming files...');
-  const results: TransformResult[] = [];
-  let filesTransformed = 0;
-  let totalErrors = 0;
-  let totalWarnings = 0;
-  let sourceFilesCount = 0;
-
-  for (const fileInfo of fileProcessor.filterSourceFiles(allFiles)) {
-    sourceFilesCount++;
-    const result = await transformFile(
-      fileInfo,
-      applyTransform,
-      options,
-      logger
-    );
-    results.push(result);
-
-    if (result.transformed) {
-      filesTransformed++;
-    }
-
-    totalErrors += result.errors.length;
-    totalWarnings += result.warnings.length;
-  }
+  // Transform jscodeshift results to our format
+  const summary = transformJscodeshiftResults(jscodeshiftResults);
 
   // Check if any files were found
-  if (sourceFilesCount === 0) {
+  if (summary.filesProcessed === 0) {
     logger.warnSpinner('No source framework files found');
     logger.info(
       'No files contain source framework imports. Migration not needed.'
@@ -74,175 +53,54 @@ export async function runTransform(
     return createEmptySummary();
   }
 
-  logger.succeedSpinner(
-    `${sourceFilesCount} files contain source framework imports`
-  );
-  logger.subsection(
-    `${allFiles.length - sourceFilesCount} files skipped (no source imports)`
-  );
   logger.newline();
 
-  // Step 3: Report summary
-  logger.newline();
+  // Step 2: Report summary
   logger.section('📊 Migration Summary');
 
-  if (filesTransformed > 0) {
+  if (summary.filesTransformed > 0) {
     logger.success(
-      `${filesTransformed} file${
-        filesTransformed > 1 ? 's' : ''
+      `${summary.filesTransformed} file${
+        summary.filesTransformed > 1 ? 's' : ''
       } transformed successfully`
     );
   }
 
-  if (sourceFilesCount - filesTransformed > 0) {
+  if (summary.filesSkipped > 0) {
     logger.info(
-      `  ${sourceFilesCount - filesTransformed} file${
-        sourceFilesCount - filesTransformed > 1 ? 's' : ''
-      } skipped (no changes needed)`
+      `  ${summary.filesSkipped} file${summary.filesSkipped > 1 ? 's' : ''} skipped (no changes needed)`
     );
   }
 
-  if (totalWarnings > 0) {
-    logger.warn(
-      `${totalWarnings} warning${totalWarnings > 1 ? 's' : ''} found`
+  if (summary.errors > 0) {
+    logger.error(
+      `${summary.errors} error${summary.errors > 1 ? 's' : ''} found`
     );
   }
 
-  if (totalErrors > 0) {
-    logger.error(`${totalErrors} error${totalErrors > 1 ? 's' : ''} found`);
-  }
-
-  // Show detailed results if verbose
-  if (options.verbose) {
-    logger.newline();
-    logger.subsection('Detailed Results:');
-    results.forEach((result) => {
-      if (result.transformed) {
-        logger.success(`  ${result.filePath}`);
-        result.changes.forEach((change) => logger.debug(`    - ${change}`));
-      }
-      if (result.warnings.length > 0) {
-        result.warnings.forEach((warning) => logger.warn(`    ${warning}`));
-      }
-      if (result.errors.length > 0) {
-        result.errors.forEach((error) => logger.error(`    ${error}`));
-      }
-    });
-  }
-
-  return {
-    filesProcessed: sourceFilesCount,
-    filesTransformed,
-    filesSkipped: sourceFilesCount - filesTransformed,
-    errors: totalErrors,
-    warnings: totalWarnings,
-    results,
-  };
+  return summary;
 }
 
 /**
- * Transform a single file
+ * Transform jscodeshift results into MigrationSummary format
  */
-async function transformFile(
-  fileInfo: FileInfo,
-  applyTransform: (
-    source: string,
-    options?: { skipValidation?: boolean; parser?: string }
-  ) => any,
-  options: CliOptions,
-  logger: Logger
-): Promise<TransformResult> {
-  const result: TransformResult = {
-    filePath: fileInfo.path,
-    transformed: false,
-    changes: [],
-    warnings: [],
-    errors: [],
+function transformJscodeshiftResults(jscodeshiftResults: {
+  ok?: number;
+  nochange?: number;
+  error?: number;
+  skip?: number;
+}): MigrationSummary {
+  const filesTransformed = jscodeshiftResults.ok || 0;
+  const filesSkipped = jscodeshiftResults.nochange || 0;
+  const totalErrors = jscodeshiftResults.error || 0;
+  const filesProcessed = filesTransformed + filesSkipped + totalErrors;
+
+  return {
+    filesProcessed,
+    filesTransformed,
+    filesSkipped,
+    errors: totalErrors,
   };
-
-  try {
-    // Note: Preprocessing has been disabled because the parser fallback strategy
-    // now uses ts/tsx parsers first, which handle TypeScript syntax correctly.
-    // The preprocessing was breaking valid TypeScript generic syntax like:
-    //   unitRef.get<ChargeService>(ChargeService)
-    // into invalid syntax:
-    //   unitRef.get((ChargeService) as ChargeService)
-    //
-    // If preprocessing is needed for specific edge cases, it should be done
-    // more carefully to avoid breaking valid TypeScript patterns.
-
-    // Apply transformation
-    const transformOutput = applyTransform(fileInfo.source, {
-      parser: options.parser,
-    });
-
-    // Check if code actually changed
-    if (transformOutput.code === fileInfo.source) {
-      logger.debug(
-        `  ⊘ ${path.relative(process.cwd(), fileInfo.path)} (no changes)`
-      );
-      return result;
-    }
-
-    result.transformed = true;
-
-    // Collect validation errors and warnings
-    transformOutput.validation.errors.forEach((err: ValidationError) => {
-      result.errors.push(`${err.rule}: ${err.message}`);
-    });
-
-    transformOutput.validation.warnings.forEach((warn: ValidationError) => {
-      result.warnings.push(`${warn.rule}: ${warn.message}`);
-    });
-
-    transformOutput.validation.criticalErrors.forEach(
-      (err: ValidationError) => {
-        result.errors.push(`[CRITICAL] ${err.rule}: ${err.message}`);
-      }
-    );
-
-    // Skip write if there are critical errors (unless explicitly allowed)
-    const hasCriticalErrors =
-      transformOutput.validation.criticalErrors.length > 0;
-    if (hasCriticalErrors && !options.allowCriticalErrors) {
-      logger.error(
-        `  ✗ ${path.relative(
-          process.cwd(),
-          fileInfo.path
-        )} (skipped due to critical errors)`
-      );
-      result.changes.push('Skipped (critical validation errors)');
-      return result;
-    }
-
-    // Handle --print flag (output to stdout instead of writing)
-    if (options.print) {
-      logger.info(`\n${'='.repeat(60)}`);
-      logger.info(`File: ${fileInfo.path}`);
-      logger.info('='.repeat(60));
-      console.log(transformOutput.code);
-      logger.info('='.repeat(60));
-      result.changes.push('Printed to stdout');
-    } else if (!options.dry) {
-      // Write transformed file
-      await fs.writeFile(fileInfo.path, transformOutput.code, 'utf-8');
-      result.changes.push('File updated');
-      logger.success(`  ${path.relative(process.cwd(), fileInfo.path)}`);
-    } else {
-      // Dry run - just report what would change
-      result.changes.push('Would be updated (dry)');
-      logger.info(`  ~ ${path.relative(process.cwd(), fileInfo.path)} (dry)`);
-    }
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error occurred';
-    result.errors.push(errorMessage);
-    logger.error(
-      `  ${path.relative(process.cwd(), fileInfo.path)}: ${errorMessage}`
-    );
-  }
-
-  return result;
 }
 
 /**
@@ -254,7 +112,5 @@ function createEmptySummary(): MigrationSummary {
     filesTransformed: 0,
     filesSkipped: 0,
     errors: 0,
-    warnings: 0,
-    results: [],
   };
 }

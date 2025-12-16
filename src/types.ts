@@ -108,6 +108,4 @@ export interface MigrationSummary {
   filesTransformed: number;
   filesSkipped: number;
   errors: number;
-  warnings: number;
-  results: TransformResult[];
 }
