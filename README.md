@@ -14,6 +14,7 @@ npx @suites/codemod <codemod> <source> [options]
 ```
 
 **Example:**
+
 ```bash
 npx @suites/codemod automock/2/to-suites-v3 src/**/*.spec.ts
 ```
@@ -66,24 +67,25 @@ describe('UserService', () => {
 
 ### Arguments
 
-| Argument | Description | Default |
-|----------|-------------|---------|
-| `codemod` | Codemod slug to run. See available transforms below. | - |
-| `source` | Path to source files or directory to transform including glob patterns. | `.` |
+| Argument  | Description                                                             | Default |
+| --------- | ----------------------------------------------------------------------- | ------- |
+| `codemod` | Codemod slug to run. See available transforms below.                    | -       |
+| `source`  | Path to source files or directory to transform including glob patterns. | `.`     |
 
 ### Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-v, --version` | Output the current version | - |
-| `-d, --dry` | Dry run (no changes are made to files) | `false` |
-| `-f, --force` | Bypass Git safety checks and forcibly run codemods | `false` |
-| `-p, --print` | Print transformed files to stdout, useful for development | `false` |
-| `--verbose` | Show more information about the transform process | `false` |
-| `--parser <parser>` | Parser to use: `tsx`, `ts`, `babel` | `tsx` |
-| `-h, --help` | Display help message | - |
+| Option              | Description                                               | Default |
+| ------------------- | --------------------------------------------------------- | ------- |
+| `-v, --version`     | Output the current version                                | -       |
+| `-d, --dry`         | Dry run (no changes are made to files)                    | `false` |
+| `-f, --force`       | Bypass Git safety checks and forcibly run codemods        | `false` |
+| `-p, --print`       | Print transformed files to stdout, useful for development | `false` |
+| `--verbose`         | Show more information about the transform process         | `false` |
+| `--parser <parser>` | Parser to use: `tsx`, `ts`, `babel`                       | `tsx`   |
+| `-h, --help`        | Display help message                                      | -       |
 
 **Examples:**
+
 ```bash
 # Preview changes (dry run)
 npx @suites/codemod automock/2/to-suites-v3 src --dry
@@ -105,6 +107,7 @@ npx @suites/codemod automock/2/to-suites-v3 src --parser babel
 Intelligently migrates Automock v2 test files to Suites v3 framework.
 
 **What it transforms:**
+
 - Import statements: `@automock/jest` -> `@suites/unit`
 - TestBed API: `TestBed.create()` -> `TestBed.solitary().compile()`
 - Mock configuration: `.using()` -> `.impl()` or `.final()`
@@ -124,6 +127,7 @@ The codemod automatically chooses between `.impl()` and `.final()`:
 **Validation:**
 
 Built-in validation ensures:
+
 - No `@automock` imports remain
 - `TestBed.create()` is converted to `TestBed.solitary()`
 - `.compile()` is called with proper `await`
@@ -139,15 +143,19 @@ Built-in validation ensures:
 ## Troubleshooting
 
 **"Working directory is not clean"**
+
 - Commit your changes or use `--force` to bypass
 
 **"No files found"**
+
 - Check your source path and ensure it contains `.ts` or `.tsx` files
 
 **Parser errors**
+
 - Try the babel parser: `--parser babel`
 
 **Validation failed**
+
 - Run with `--verbose` for detailed logs
 - Review validation errors in the output
 - Fix the issues reported by validators
@@ -157,6 +165,7 @@ For more help, see [troubleshooting guide](https://github.com/suites-dev/codemod
 ## How It Works
 
 The codemod uses [jscodeshift](https://github.com/facebook/jscodeshift) to:
+
 1. Parse TypeScript/JavaScript into an Abstract Syntax Tree (AST)
 2. Apply intelligent transformations (imports, TestBed API, mocks, types)
 3. Validate the transformed code
@@ -169,12 +178,14 @@ The codemod uses [jscodeshift](https://github.com/facebook/jscodeshift) to:
 This codemod follows the **Codemod Registry** pattern used by React, Next.js, and other major frameworks:
 
 **Transform Naming:** `<framework>/<version>/<transform>`
+
 - `automock/2/to-suites-v3` - Current migration
 - `automock/3/to-suites-v4` - Future migrations
 - Supports multiple transforms per version
 - Extensible to other frameworks (e.g., `jest/28/to-v29`)
 
 **Directory Structure:**
+
 ```
 src/transforms/
   automock/              # Framework namespace
@@ -185,6 +196,7 @@ src/transforms/
 ```
 
 **Design Benefits:**
+
 - No default transform - explicit selection prevents mistakes
 - Version-based organization supports migration chains
 - Framework namespacing allows multi-framework support
@@ -204,7 +216,30 @@ Contributions welcome! To contribute:
 ### Adding New Transforms
 
 1. Create transform directory: `src/transforms/<framework>/<version>/<transform-name>.ts`
-2. Export `applyTransform` function from your transform
+2. **Export a default function** that follows jscodeshift's transform signature:
+
+   ```typescript
+   import type { FileInfo, API, Options } from 'jscodeshift';
+   import { transform } from '../../../transform';
+
+   export default transform;
+   ```
+
+   Or implement your own transform function:
+
+   ```typescript
+   import type { FileInfo, API, Options } from 'jscodeshift';
+
+   export default function transform(
+     fileInfo: FileInfo,
+     api: API,
+     options: Options
+   ): string | null | undefined {
+     // Your transform logic here
+     return transformedCode;
+   }
+   ```
+
 3. Register in `src/transforms/index.ts`:
    ```typescript
    {
@@ -218,9 +253,12 @@ Contributions welcome! To contribute:
 6. Update this README
 
 **Example:**
+
 ```typescript
 // src/transforms/automock/3/to-suites-v4.ts
-export { applyTransform } from '../../../transform';
+import { transform } from '../../../transform';
+
+export default transform;
 ```
 
 ### Project Structure
