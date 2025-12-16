@@ -8,7 +8,7 @@ import type {
 } from "./types";
 import type { Logger } from "./utils/logger";
 import type { TransformInfo } from "./transforms";
-import { createFileProcessor } from "./utils/file-processor";
+import { createFileProcessor, type FileInfo } from "./utils/file-processor";
 
 /**
  * Run the transformation on the target path
@@ -67,9 +67,9 @@ export async function runTransform(
   let totalErrors = 0;
   let totalWarnings = 0;
 
-  for (const filePath of sourceFiles) {
+  for (const fileInfo of sourceFiles) {
     const result = await transformFile(
-      filePath,
+      fileInfo,
       applyTransform,
       options,
       logger
@@ -148,7 +148,7 @@ export async function runTransform(
  * Transform a single file
  */
 async function transformFile(
-  filePath: string,
+  fileInfo: FileInfo,
   applyTransform: (
     source: string,
     options?: { skipValidation?: boolean; parser?: string }
@@ -157,7 +157,7 @@ async function transformFile(
   logger: Logger
 ): Promise<TransformResult> {
   const result: TransformResult = {
-    filePath,
+    filePath: fileInfo.path,
     transformed: false,
     changes: [],
     warnings: [],
@@ -165,9 +165,6 @@ async function transformFile(
   };
 
   try {
-    // Read source file
-    let source = await fs.readFile(filePath, "utf-8");
-
     // Note: Preprocessing has been disabled because the parser fallback strategy
     // now uses ts/tsx parsers first, which handle TypeScript syntax correctly.
     // The preprocessing was breaking valid TypeScript generic syntax like:
@@ -179,14 +176,14 @@ async function transformFile(
     // more carefully to avoid breaking valid TypeScript patterns.
 
     // Apply transformation
-    const transformOutput = applyTransform(source, {
+    const transformOutput = applyTransform(fileInfo.source, {
       parser: options.parser,
     });
 
     // Check if code actually changed
-    if (transformOutput.code === source) {
+    if (transformOutput.code === fileInfo.source) {
       logger.debug(
-        `  ⊘ ${path.relative(process.cwd(), filePath)} (no changes)`
+        `  ⊘ ${path.relative(process.cwd(), fileInfo.path)} (no changes)`
       );
       return result;
     }
@@ -215,7 +212,7 @@ async function transformFile(
       logger.error(
         `  ✗ ${path.relative(
           process.cwd(),
-          filePath
+          fileInfo.path
         )} (skipped due to critical errors)`
       );
       result.changes.push("Skipped (critical validation errors)");
@@ -225,27 +222,27 @@ async function transformFile(
     // Handle --print flag (output to stdout instead of writing)
     if (options.print) {
       logger.info(`\n${"=".repeat(60)}`);
-      logger.info(`File: ${filePath}`);
+      logger.info(`File: ${fileInfo.path}`);
       logger.info("=".repeat(60));
       console.log(transformOutput.code);
       logger.info("=".repeat(60));
       result.changes.push("Printed to stdout");
     } else if (!options.dry) {
       // Write transformed file
-      await fs.writeFile(filePath, transformOutput.code, "utf-8");
+      await fs.writeFile(fileInfo.path, transformOutput.code, "utf-8");
       result.changes.push("File updated");
-      logger.success(`  ${path.relative(process.cwd(), filePath)}`);
+      logger.success(`  ${path.relative(process.cwd(), fileInfo.path)}`);
     } else {
       // Dry run - just report what would change
       result.changes.push("Would be updated (dry)");
-      logger.info(`  ~ ${path.relative(process.cwd(), filePath)} (dry)`);
+      logger.info(`  ~ ${path.relative(process.cwd(), fileInfo.path)} (dry)`);
     }
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
     result.errors.push(errorMessage);
     logger.error(
-      `  ${path.relative(process.cwd(), filePath)}: ${errorMessage}`
+      `  ${path.relative(process.cwd(), fileInfo.path)}: ${errorMessage}`
     );
   }
 
