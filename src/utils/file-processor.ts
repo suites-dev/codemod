@@ -8,6 +8,11 @@ export interface FileProcessorOptions {
   sourceImportPattern?: RegExp;
 }
 
+export interface FileInfo {
+  path: string;
+  source: string;
+}
+
 export class FileProcessor {
   private options: FileProcessorOptions;
 
@@ -108,12 +113,18 @@ export class FileProcessor {
   /**
    * Filter files that contain source framework imports
    * Default pattern matches Automock imports for backward compatibility
+   * Returns file info objects with path and source content to avoid double reads
    */
-  filterSourceFiles(files: string[]): string[] {
-    return files.filter((filePath) => {
-      const content = this.readFile(filePath);
-      return this.hasSourceImport(content);
-    });
+  filterSourceFiles(files: string[]): FileInfo[] {
+    return files
+      .map((filePath) => {
+        const content = this.readFile(filePath);
+        if (this.hasSourceImport(content)) {
+          return { path: filePath, source: content };
+        }
+        return null;
+      })
+      .filter((file): file is FileInfo => file !== null);
   }
 
   /**
