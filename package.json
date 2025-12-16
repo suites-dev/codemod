@@ -25,9 +25,10 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "tsc -p tsconfig.build.json",
-    "test": "jest --coverage --verbose",
+    "test": "jest --coverage --verbose --testPathIgnorePatterns=e2e",
     "test:fixtures": "jest --testPathPattern=integration",
-    "test:watch": "jest --watch",
+    "test:e2e": "npm run build && jest --testPathPattern=e2e",
+    "test:watch": "jest --watch --testPathIgnorePatterns=e2e",
     "lint": "eslint '{src,test}/**/*.ts'",
     "lint:fix": "eslint '{src,test}/**/*.ts' --fix"
   },
