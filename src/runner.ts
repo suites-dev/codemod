@@ -246,61 +246,6 @@ async function transformFile(
 }
 
 /**
- * Pre-process TypeScript import alias declarations
- * Converts: import X = jest.Y; → const X = jest.Y;
- * This syntax is TypeScript-specific and causes babel parser to fail
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function preprocessImportAliases(source: string): string {
-  // Match: import identifier = jest.something;
-  // or:   import identifier = Sinon.something;
-  return source.replace(
-    /^import\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(jest|sinon|Sinon)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*;/gm,
-    'const $1 = $2.$3;'
-  );
-}
-
-/**
- * Pre-process source to convert old-style type casts that confuse the parser
- * Converts: <Type>value → value as Type
- * This prevents parse errors in .tsx files where <> is ambiguous (JSX vs type cast)
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function preprocessTypeCasts(source: string): string {
-  // Match common patterns:
-  // <Type>identifier
-  // <Type>{} or <Type>{ ... }
-  // <Type>[] or <Type>[...]
-  // <Type>(...)
-
-  // Pattern 1: <Type>identifier or <Type>identifier.property
-  let result = source.replace(
-    /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>([a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)/g,
-    '$2 as $1'
-  );
-
-  // Pattern 2: <Type>{} or <Type>{ ... }
-  result = result.replace(
-    /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\{[^}]*\})/g,
-    '($2 as $1)'
-  );
-
-  // Pattern 3: <Type>[] or <Type>[...]
-  result = result.replace(
-    /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\[[^\]]*\])/g,
-    '($2 as $1)'
-  );
-
-  // Pattern 4: <Type>(...)
-  result = result.replace(
-    /<([A-Z][a-zA-Z0-9_<>[\],\s|&]*)>(\([^)]*\))/g,
-    '($2 as $1)'
-  );
-
-  return result;
-}
-
-/**
  * Create an empty migration summary
  */
 function createEmptySummary(): MigrationSummary {
