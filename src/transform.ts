@@ -1,7 +1,7 @@
 import jscodeshift from 'jscodeshift';
 import type { AnalysisContext, TransformOutput } from './types';
 import { detectSuitesContext } from './analyzers/context-detector';
-import { detectRetrievals} from './analyzers/retrieval-detector';
+import { detectRetrievals } from './analyzers/retrieval-detector';
 import { analyzeAllMockConfigurations } from './analyzers/stub-detector';
 import { transformImports } from './transforms/import-transformer';
 import { transformTestBed } from './transforms/testbed-transformer';
@@ -26,13 +26,17 @@ export function applyTransform(
   if (source.length === 0) {
     return {
       code: source,
-      validation: { success: true, errors: [], warnings: [], criticalErrors: [] },
+      validation: {
+        success: true,
+        errors: [],
+        warnings: [],
+        criticalErrors: [],
+      },
     };
   }
 
   // Parse with fallback strategy
   const { j, root } = parseSourceWithFallback(source, options?.parser);
-
 
   // Phase 1: Analysis
   const context: AnalysisContext = {
@@ -71,10 +75,7 @@ export function applyTransform(
   cleanupObsoleteTypeCasts(j, root);
 
   // Phase 6: Post-transformation validation
-  const transformedSource = root.toSource({
-    quote: 'single',
-    trailingComma: true,
-  });
+  const transformedSource = root.toSource();
 
   const validation = options?.skipValidation
     ? { success: true, errors: [], warnings: [], criticalErrors: [] }
@@ -141,6 +142,6 @@ function parseSourceWithFallback(
   // All parsers failed - throw detailed error
   throw new Error(
     `Failed to parse source code with any available parser (tried: ${parsersToTry.join(', ')}). ` +
-    `Last error: ${lastError?.message || 'Unknown error'}`
+      `Last error: ${lastError?.message || 'Unknown error'}`
   );
 }
