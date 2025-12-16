@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Snapshot Tests Basic Examples from Specification should transform complex mock with .impl() and retrieval 1`] = `
-"import { TestBed, type Mocked } from '@suites/unit';
+"import { TestBed, type Mocked } from "@suites/unit";
 import { jest } from '@jest/globals';
 
 describe('OrderService', () => {
@@ -14,11 +14,11 @@ describe('OrderService', () => {
       .mock(OrderRepository)
       .impl(stubFn => ({
       findById: stubFn(),
-      save: stubFn().mockResolvedValue(true),
+      save: stubFn().mockResolvedValue(true)
     }))
       .mock(PaymentGateway)
       .impl(stubFn => ({
-      charge: stubFn().mockResolvedValue({ success: true }),
+      charge: stubFn().mockResolvedValue({ success: true })
     }))
       .compile();
 
@@ -66,7 +66,7 @@ describe('UserService', () => {
 `;
 
 exports[`Snapshot Tests Basic Examples from Specification should transform token injection 1`] = `
-"import { TestBed } from '@suites/unit';
+"import { TestBed } from "@suites/unit";
 
 describe('ApiService', () => {
   let service: ApiService;
@@ -86,7 +86,7 @@ describe('ApiService', () => {
 `;
 
 exports[`Snapshot Tests Edge Cases should handle various edge cases correctly 1`] = `
-"import { TestBed } from '@suites/unit';
+"import { TestBed } from "@suites/unit";
 
 describe('Edge Cases', () => {
   // Already async function
@@ -130,7 +130,7 @@ describe('Edge Cases', () => {
 `;
 
 exports[`Snapshot Tests Mixed .impl() and .final() should correctly apply .impl() to retrieved mocks and .final() to others 1`] = `
-"import { TestBed, type Mocked } from '@suites/unit';
+"import { TestBed, type Mocked } from "@suites/unit";
 
 describe('NotificationService', () => {
   let service: NotificationService;
@@ -141,7 +141,7 @@ describe('NotificationService', () => {
       .mock(EmailService)
       .impl(stubFn => ({
       send: stubFn(),
-      validate: stubFn(),
+      validate: stubFn()
     }))
       .mock(Config)
       .final({
@@ -156,7 +156,7 @@ describe('NotificationService', () => {
       })
       .mock(Logger)
       .impl(stubFn => ({
-      log: stubFn(),
+      log: stubFn()
     }))
       .compile();
 
@@ -176,7 +176,7 @@ describe('NotificationService', () => {
 `;
 
 exports[`Snapshot Tests Multiple Test Hooks should transform TestBed in beforeAll, beforeEach, and test blocks 1`] = `
-"import { TestBed } from '@suites/unit';
+"import { TestBed } from "@suites/unit";
 
 describe('TaskService', () => {
   let service: TaskService;
@@ -185,7 +185,7 @@ describe('TaskService', () => {
     const { unit } = await TestBed.solitary(TaskService)
       .mock(TaskRepository)
       .impl(stubFn => ({
-      findAll: stubFn(),
+      findAll: stubFn()
     }))
       .compile();
 
@@ -206,7 +206,7 @@ describe('TaskService', () => {
     const { unit, unitRef } = await TestBed.solitary(TaskService)
       .mock(TaskRepository)
       .impl(stubFn => ({
-      create: stubFn(),
+      create: stubFn()
     }))
       .compile();
 
@@ -228,7 +228,7 @@ describe('TaskService', () => {
 `;
 
 exports[`Snapshot Tests Sinon Framework should transform Sinon-based tests 1`] = `
-"import { TestBed, type Mocked } from '@suites/unit';
+"import { TestBed, type Mocked } from "@suites/unit";
 
 describe('PaymentService', () => {
   let service: PaymentService;
@@ -240,12 +240,12 @@ describe('PaymentService', () => {
       .mock(PaymentGateway)
       .impl(stubFn => ({
       charge: stubFn(),
-      refund: stubFn(),
+      refund: stubFn()
     }))
       .mock(Logger)
       .impl(stubFn => ({
       info: stubFn(),
-      error: stubFn(),
+      error: stubFn()
     }))
       .compile();
 
@@ -267,7 +267,7 @@ describe('PaymentService', () => {
 `;
 
 exports[`Snapshot Tests Type Cast Cleanup should remove obsolete type casts 1`] = `
-"import { TestBed, type Mocked } from '@suites/unit';
+"import { TestBed, type Mocked } from "@suites/unit";
 
 describe('UserController', () => {
   let controller: UserController;
@@ -303,7 +303,7 @@ describe('UserController', () => {
 `;
 
 exports[`Snapshot Tests UnitReference Usage should handle UnitReference imports and usage 1`] = `
-"import { TestBed, type UnitReference, type Mocked } from '@suites/unit';
+"import { TestBed, type UnitReference, type Mocked } from "@suites/unit";
 
 describe('ProductService', () => {
   let service: ProductService;
@@ -316,7 +316,7 @@ describe('ProductService', () => {
       .impl(stubFn => ({
       find: stubFn(),
       save: stubFn(),
-      delete: stubFn(),
+      delete: stubFn()
     }))
       .compile();
 
