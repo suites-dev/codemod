@@ -6,6 +6,7 @@
       "prerelease": true
     }
   ],
+  "tagFormat": "@suites/codemod@${version}",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
@@ -68,6 +69,12 @@
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
       }
     ],
-    "@semantic-release/github"
+    "@semantic-release/github",
+    [
+      "@semantic-release/exec",
+      {
+        "successCmd": "git tag v${nextRelease.version} && git push origin v${nextRelease.version}"
+      }
+    ]
   ]
 }
