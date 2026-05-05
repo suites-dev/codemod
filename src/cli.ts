@@ -25,6 +25,7 @@ program
   .option('-p, --print', 'Print transformed files to stdout, useful for development', false)
   .option('--verbose', 'Show more information about the transform process', false)
   .option('--parser <parser>', 'Parser to use (tsx, ts, babel)', 'tsx')
+  .option('--allow-critical-errors', 'Allow writes even when critical validation errors are present', false)
   .action(
     async (
       codemodArg: string | undefined,

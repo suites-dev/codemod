@@ -1,4 +1,4 @@
-import { applyTransform } from '../../src/transforms/automock/2/to-suites-v3';
+import { testTransform } from '../utils/transform-test-helper';
 
 describe('Global Jest Handling', () => {
   describe('When jest is global (no import)', () => {
@@ -23,7 +23,7 @@ describe('Global Jest Handling', () => {
         });
       `;
 
-      const result = applyTransform(source);
+      const result = testTransform(source);
       const transformed = result.code;
 
       // Should transform jest.Mocked to Mocked
@@ -60,7 +60,7 @@ describe('Global Jest Handling', () => {
         });
       `;
 
-      const result = applyTransform(source);
+      const result = testTransform(source);
       const transformed = result.code;
 
       // Should transform to .impl() (because retrieved)
@@ -87,7 +87,7 @@ describe('Global Jest Handling', () => {
         });
       `;
 
-      const result = applyTransform(source);
+      const result = testTransform(source);
       const transformed = result.code;
 
       // Should still transform jest.Mocked even in partially migrated file
@@ -109,7 +109,7 @@ describe('Global Jest Handling', () => {
         TestBed.create(MyService).compile();
       `;
 
-      const result = applyTransform(source);
+      const result = testTransform(source);
       const transformed = result.code;
 
       // All jest.Mocked should be transformed

@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Parse Error Handling Category 1: Multi-Variable Declarations with Generics (18 files) should parse and transform files with multi-variable let declarations containing jest.Mocked generics 1`] = `
-"import { TestBed, type Mocked } from '@suites/unit';
+"import { TestBed, type Mocked } from "@suites/unit";
 
 let service: InternalTransactionUpdateService,
     chargeService: Mocked<ChargeService>,
@@ -24,7 +24,7 @@ describe('Test', () => {
 `;
 
 exports[`Parse Error Handling Category 2: TypeScript Type Assertions in Generics (3 files) should parse and transform files with type assertions in expect().resolves.toStrictEqual 1`] = `
-"import { TestBed, type Mocked } from '@suites/unit';
+"import { TestBed, type Mocked } from "@suites/unit";
 
 describe('TypeAssertionTests', () => {
   let service: PaymentService;
@@ -54,7 +54,7 @@ describe('TypeAssertionTests', () => {
 `;
 
 exports[`Parse Error Handling Category 3: Function Call Syntax Issues (3 files) should parse and transform files with spread syntax in function parameters 1`] = `
-"import { TestBed } from '@suites/unit';
+"import { TestBed } from "@suites/unit";
 
 describe('SpreadParamTests', () => {
   const payoutsFactory = (
@@ -78,7 +78,7 @@ describe('SpreadParamTests', () => {
 `;
 
 exports[`Parse Error Handling Real-world Integration: Multiple Parse Error Categories should parse and transform complex files combining multiple error patterns 1`] = `
-"import { TestBed, type Mocked } from '@suites/unit';
+"import { TestBed, type Mocked } from "@suites/unit";
 
 let service: MyService,
     mockRepo: Mocked<Repository>,

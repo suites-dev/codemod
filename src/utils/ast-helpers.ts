@@ -1,12 +1,15 @@
-import type { JSCodeshift, Collection, ASTPath, Identifier, Node } from 'jscodeshift';
-import { isCallExpression, isMemberExpression, isIdentifier } from './type-guards';
-
-/**
- * Parse source code into AST
- */
-export function parseSource(j: JSCodeshift, source: string): Collection {
-  return j(source);
-}
+import type {
+  JSCodeshift,
+  Collection,
+  ASTPath,
+  Identifier,
+  Node,
+} from 'jscodeshift';
+import {
+  isCallExpression,
+  isMemberExpression,
+  isIdentifier,
+} from './type-guards';
 
 /**
  * Check if a node is an await expression
@@ -21,7 +24,9 @@ export function isAwaitExpression(node: Node): boolean {
 export function isUnitRefVariable(node: Node): boolean {
   if (node.type === 'Identifier') {
     const name = (node as Identifier).name;
-    return name === 'unitRef' || name.includes('unitRef') || name.includes('ref');
+    return (
+      name === 'unitRef' || name.includes('unitRef') || name.includes('ref')
+    );
   }
   return false;
 }
@@ -136,10 +141,7 @@ export function isSinonStub(node: Node): boolean {
 /**
  * Get all call expressions in a node
  */
-export function getAllCallExpressions(
-  j: JSCodeshift,
-  node: Node
-): Collection {
+export function getAllCallExpressions(j: JSCodeshift, node: Node): Collection {
   return j(node as any).find(j.CallExpression);
 }
 

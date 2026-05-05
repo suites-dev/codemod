@@ -1,0 +1,14 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+    patch:
+      default:
+        target: auto
+
+ignore:
+  - "src/cli.ts"
+  - "src/runner.ts"
+  - "src/utils/logger.ts"
+  - "src/utils/git-safety.ts"
